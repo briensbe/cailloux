@@ -16,9 +16,9 @@ les gros cailloux d'abord, puis les petits, le sable, l'eau.
 ## Lancer
 
 ```bash
-npm install
-npm start          # http://localhost:4200
-npm test           # tests unitaires (Vitest) du cœur métier
+pnpm install
+pnpm start          # http://localhost:4200
+pnpm test           # tests unitaires (Vitest) du cœur métier
 ```
 
 ## Organisation du code
