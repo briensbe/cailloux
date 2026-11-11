@@ -30,3 +30,10 @@ pnpm test           # tests unitaires (Vitest) du cœur métier
 | `src/app/ui`        | Composants : vase, brique, inspecteur, fenêtre « Nouveau caillou », calque de drag.    |
 
 Raccourcis : flèches pour pousser la brique sélectionnée, `Suppr` pour la retirer, `Ctrl+Z` / `Ctrl+Y`.
+
+## Publier sur GitHub Pages
+
+Le workflow GitHub Actions publie automatiquement l'application après chaque push sur `main` (ou manuellement depuis l'onglet **Actions**).
+Dans les paramètres du dépôt, choisir **Settings > Pages > Build and deployment > Source: GitHub Actions**.
+
+Pour ce dépôt, l'application sera disponible à l'adresse <https://briensbe.github.io/cailloux/>.
