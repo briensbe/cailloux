@@ -1,0 +1,251 @@
+.dialog {
+  width: min(680px, calc(100vw - 32px));
+  padding: 0;
+  border: 0;
+  border-radius: 26px;
+  background: #fbf8f2;
+  color: var(--ink);
+  box-shadow: 0 50px 100px -30px rgb(30 20 10 / 0.6);
+  overflow: hidden;
+
+  &[open] {
+    animation: dialog-in 0.4s cubic-bezier(0.2, 1.2, 0.35, 1) both;
+  }
+  &::backdrop {
+    background: rgb(40 32 24 / 0.38);
+    backdrop-filter: blur(3px);
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+}
+
+header {
+  padding: 22px 26px 16px;
+  background: linear-gradient(
+    120deg,
+    color-mix(in oklab, var(--stone) 22%, #fbf8f2),
+    #fbf8f2 70%
+  );
+  border-bottom: 1px solid var(--line);
+  transition: background 0.3s;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.name {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  &::placeholder {
+    color: var(--ink-faint);
+  }
+  &:focus {
+    outline: none;
+  }
+}
+
+.body {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 26px;
+  padding: 20px 26px;
+  @media (max-width: 620px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+  strong {
+    color: var(--ink);
+    font-family: var(--font-mono);
+  }
+}
+
+.charge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  input {
+    width: 110px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 12px;
+    background: white;
+    box-shadow: inset 0 0 0 1px var(--line);
+    color: var(--ink);
+    font: 600 22px var(--font-mono);
+    &:focus {
+      outline: 2px solid var(--water);
+    }
+  }
+  em {
+    color: var(--ink-soft);
+    font-style: normal;
+    font-size: 13px;
+  }
+}
+
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  button {
+    padding: 4px 10px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--chip);
+    color: var(--ink);
+    font: 600 12px var(--font-mono);
+    cursor: pointer;
+    &:hover {
+      background: var(--chip-hover);
+    }
+    &[aria-pressed='true'] {
+      background: var(--ink);
+      color: var(--paper);
+    }
+  }
+}
+
+input[type='range'] {
+  width: 100%;
+  accent-color: var(--ink);
+}
+
+.explain {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 12.5px;
+}
+
+// ------------------------------------------------------------------ Aperçu
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  padding: 26px 18px 18px;
+  border-radius: 18px;
+  background: var(--chip);
+}
+
+.mini-vase {
+  position: relative;
+  border: 2px solid rgb(70 105 120 / 0.45);
+  border-top: 0;
+  border-radius: 0 0 14px 14px;
+  background: rgb(255 255 255 / 0.55);
+}
+
+.taken,
+.new {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1.5px solid #fbf8f2;
+  border-radius: 4px;
+}
+
+.taken {
+  background: rgb(60 55 50 / 0.22);
+}
+
+.new {
+  background: var(--stone);
+  box-shadow: 0 4px 10px -4px rgb(0 0 0 / 0.5);
+  transition:
+    left 0.3s cubic-bezier(0.3, 1.3, 0.4, 1),
+    bottom 0.3s cubic-bezier(0.3, 1.3, 0.4, 1),
+    width 0.2s,
+    height 0.2s;
+  animation: bob 1.2s ease-in-out infinite alternate;
+  &.overflow {
+    opacity: 0.8;
+    outline: 2px dashed #b4492b;
+    outline-offset: 2px;
+  }
+}
+
+@keyframes bob {
+  to {
+    filter: brightness(1.12);
+  }
+}
+
+figcaption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  max-width: 250px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.kind {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.shape strong {
+  font-family: var(--font-mono);
+}
+
+.fit {
+  margin-top: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  &.ok {
+    background: color-mix(in oklab, var(--water) 16%, transparent);
+    color: var(--water-deep);
+  }
+  &.ko {
+    background: rgb(180 73 43 / 0.12);
+    color: #a2401f;
+  }
+}
+
+footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 26px 22px;
+}

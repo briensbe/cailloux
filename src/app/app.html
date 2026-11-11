@@ -1,0 +1,96 @@
+<header class="masthead">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M19 34c5-2.5 21-2.5 26 0v13a8 8 0 0 1-8 8H27a8 8 0 0 1-8-8z" fill="#56a8cd" opacity=".45" />
+      <rect x="20.5" y="40" width="13" height="13" rx="3.5" fill="#c8643b" />
+      <rect x="34.5" y="44" width="9.5" height="9" rx="3" fill="#3d5a99" />
+      <rect x="22" y="29.5" width="9" height="9.5" rx="3" fill="#d9a441" />
+      <rect x="33" y="33" width="8" height="10" rx="3" fill="#4f9573" />
+      <path
+        d="M17 10v37a10 10 0 0 0 10 10h10a10 10 0 0 0 10-10V10"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="3"
+        stroke-linejoin="round"
+      />
+      <path d="M13.5 9.5h37" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" />
+      <path d="M21 16v26" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".8" />
+    </svg>
+    <div>
+      <h1>Cailloux</h1>
+      <p class="tagline">Est-ce que ce vase est plein&nbsp;? Les gros cailloux d'abord.</p>
+    </div>
+  </div>
+
+  <ol class="lesson" aria-label="La leçon du vase">
+    <li><i class="pebble xl"></i>Gros cailloux</li>
+    <li><i class="pebble md"></i>Petits cailloux</li>
+    <li><i class="pebble sand"></i>Sable</li>
+    <li><i class="pebble water"></i>Eau</li>
+  </ol>
+
+  <dl class="stats">
+    <div>
+      <dt>Équipes</dt>
+      <dd>{{ stats().teams }}</dd>
+    </div>
+    <div>
+      <dt>Personnes</dt>
+      <dd>{{ stats().persons }}</dd>
+    </div>
+    <div>
+      <dt>Capacité</dt>
+      <dd>{{ stats().capacity }}<small>j/h</small></dd>
+    </div>
+    <div>
+      <dt>Rempli</dt>
+      <dd>{{ stats().fill * 100 | number: '1.0-0' }}<small>%</small></dd>
+    </div>
+  </dl>
+</header>
+
+<nav class="toolbar" aria-label="Outils">
+  <label class="tool">
+    <span>Semaine de départ</span>
+    <input type="date" [value]="store.startDate()" (change)="setStartDate($event)" />
+  </label>
+  <label class="tool">
+    <span>Zoom</span>
+    <input type="range" [min]="zoomMin" [max]="zoomMax" [value]="view.cellW()" (input)="setZoom($event)" />
+  </label>
+  <div class="history">
+    <button type="button" class="btn btn-icon" (click)="store.undo()" [disabled]="!store.canUndo()" title="Annuler (Ctrl+Z)" aria-label="Annuler">
+      <app-icon name="undo" />
+    </button>
+    <button type="button" class="btn btn-icon" (click)="store.redo()" [disabled]="!store.canRedo()" title="Rétablir (Ctrl+Y)" aria-label="Rétablir">
+      <app-icon name="redo" />
+    </button>
+  </div>
+  <span class="spacer"></span>
+  <button type="button" class="btn btn-ghost" (click)="store.resetDemo()">Recharger la démo</button>
+  <button type="button" class="btn btn-primary" (click)="store.addTeam()"><app-icon name="plus" /> Nouvelle équipe</button>
+</nav>
+
+<main class="board">
+  @for (team of store.teams(); track team.id; let i = $index) {
+    <app-reservoir [team]="team" [style.--i]="i" />
+  } @empty {
+    <div class="empty">
+      <p>Aucun vase pour l'instant.</p>
+      <button type="button" class="btn btn-primary" (click)="store.addTeam()"><app-icon name="plus" /> Créer une équipe</button>
+    </div>
+  }
+</main>
+
+<footer class="hints">
+  <span><kbd>Glisser</kbd> déplacer une brique</span>
+  <span><kbd>Poignées</kbd> l'étirer</span>
+  <span><kbd>← ↑ → ↓</kbd> la pousser d'une case</span>
+  <span><kbd>Suppr</kbd> la retirer</span>
+  <span><kbd>Ctrl Z</kbd> annuler</span>
+</footer>
+
+<app-inspector />
+<app-project-dialog />
+<app-drag-overlay />
+<app-toasts />

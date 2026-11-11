@@ -1,0 +1,173 @@
+<header class="head">
+  <input
+    class="team-name"
+    [value]="team().name"
+    (change)="rename($event)"
+    (keydown.enter)="$any($event.target).blur()"
+    aria-label="Nom de l'équipe"
+    spellcheck="false"
+  />
+  <div class="dims">
+    <app-stepper
+      icon="users"
+      [value]="team().size"
+      [max]="30"
+      [unit]="team().size > 1 ? 'personnes' : 'personne'"
+      (changed)="store.setTeamSize(team().id, $event)"
+    />
+    <app-stepper
+      icon="clock"
+      [value]="team().horizon"
+      [max]="52"
+      [unit]="team().horizon > 1 ? 'semaines' : 'semaine'"
+      (changed)="store.setHorizon(team().id, $event)"
+    />
+  </div>
+  <div class="actions">
+    <button type="button" class="btn btn-primary" (click)="view.newProjectFor.set(team().id)">
+      <app-icon name="plus" /> Caillou
+    </button>
+    <button type="button" class="btn" (click)="store.compactTeam(team().id)" title="Tout faire glisser vers le début et vers le fond">
+      <app-icon name="shake" /> Tasser
+    </button>
+    <button type="button" class="btn btn-water" [class.on]="water()" (click)="water.set(!water())">
+      <app-icon name="drop" /> Le vase est-il plein&nbsp;?
+    </button>
+    <button type="button" class="btn btn-icon" (click)="store.removeTeam(team().id)" title="Supprimer l'équipe" aria-label="Supprimer l'équipe">
+      <app-icon name="trash" />
+    </button>
+  </div>
+</header>
+
+<div class="gauge">
+  <div class="bar" role="meter" aria-label="Remplissage" [attr.aria-valuenow]="fill() * 100 | number: '1.0-0'" aria-valuemin="0" aria-valuemax="100">
+    <span [style.width.%]="fill() * 100"></span>
+  </div>
+  <p>
+    <strong>{{ fill() * 100 | number: '1.0-0' }}&nbsp;%</strong> rempli ·
+    <span class="mono">{{ freeDays() }}&nbsp;j/h</span> libres sur {{ capacity() }} ·
+    @if (biggest(); as b) {
+      plus gros caillou qui passe encore&nbsp;: <strong>{{ b.persons }}&nbsp;p × {{ b.weeks }}&nbsp;sem</strong>
+    } @else {
+      plus aucune place
+    }
+  </p>
+</div>
+
+<div class="scroller">
+  <div class="vase-area" data-drop-kind="grid" [attr.data-drop-team]="team().id">
+    <ol class="y-axis" aria-hidden="true">
+      @for (n of rows(); track n) {
+        <li [style.height.px]="cellH"><span>{{ n }}</span></li>
+      }
+    </ol>
+
+    <div class="vase">
+      <div
+        data-grid
+        class="grid"
+        [style.width.px]="gridW()"
+        [style.height.px]="gridH()"
+        (pointerdown)="onGridPointerDown($event)"
+      >
+        <div class="water" [class.on]="water()"><div class="water-fill"></div></div>
+
+        @if (todayX(); as x) {
+          <div class="today" [style.left.px]="x"><span>aujourd'hui</span></div>
+        }
+
+        @if (ghost(); as g) {
+          @let r = rect(g);
+          <div
+            class="ghost"
+            [style.--stone]="g.stone"
+            [style.left.px]="r.left"
+            [style.bottom.px]="r.bottom"
+            [style.width.px]="r.width"
+            [style.height.px]="r.height"
+          ></div>
+        }
+
+        @for (p of placed(); track p.id) {
+          @let d = dimsOf(p);
+          <app-brick
+            tabindex="0"
+            [attr.data-brick-id]="p.id"
+            [project]="p"
+            [dims]="d"
+            [selected]="store.selectedId() === p.id"
+            [resizable]="true"
+            [style.left.px]="p.col! * view.cellW()"
+            [style.bottom.px]="p.row! * cellH"
+            [style.width.px]="d.weeks * view.cellW()"
+            [style.height.px]="d.persons * cellH"
+            [class.is-dragging]="draggingId() === p.id"
+            [class.is-landing]="dnd.landing() === p.id"
+            [class.is-resizing]="resizing()?.id === p.id"
+            [class.is-dropped]="store.justDropped() === p.id"
+            (pointerdown)="dnd.press($event, p)"
+            (resizeStart)="startResize($event.event, p, $event.handle)"
+            (keydown.enter)="store.select(p.id)"
+          />
+        }
+      </div>
+    </div>
+
+    <span class="x-legend" title="Personnes encore disponibles chaque semaine">dispo</span>
+    <ol class="x-axis">
+      @for (w of weeks(); track w.index) {
+        <li [style.width.px]="view.cellW()" [class.month-start]="w.month">
+          @if (w.month) {
+            <span class="m">{{ w.month }}</span>
+          }
+          <span class="n">S{{ w.number }}</span>
+          <span class="d">{{ w.label }}</span>
+          <span class="free" [class.zero]="freePerWeek()[w.index] === 0">{{ freePerWeek()[w.index] }}</span>
+        </li>
+      }
+    </ol>
+  </div>
+</div>
+
+<div
+  class="tray"
+  data-drop-kind="tray"
+  [attr.data-drop-team]="team().id"
+  [class.active]="trayActive()"
+>
+  <span class="tray-label"><app-icon name="out" /> Hors du vase</span>
+  @for (p of waiting(); track p.id) {
+    @let m = miniSize(p);
+    <app-brick
+      class="mini"
+      tabindex="0"
+      [project]="p"
+      [dims]="p"
+      [selected]="store.selectedId() === p.id"
+      [style.width.px]="m.w"
+      [style.height.px]="m.h"
+      [class.is-dragging]="draggingId() === p.id"
+      (pointerdown)="dnd.press($event, p)"
+      (keydown.enter)="store.select(p.id)"
+    />
+  } @empty {
+    <span class="tray-hint">Glissez une brique ici pour la sortir du vase.</span>
+  }
+</div>
+
+@if (water()) {
+  <div class="bubble" role="status">
+    <span class="q">« Est-ce que ce vase est plein&nbsp;? »</span>
+    @if (freeDays() === 0) {
+      <strong>Oui.</strong> Cette fois, il est vraiment plein.
+    } @else {
+      <strong>Non&nbsp;!</strong> Il reste encore <b>{{ freeDays() }}&nbsp;j/h</b> d'eau entre les cailloux.
+      @if (biggest(); as b) {
+        <span class="hint">De quoi glisser un projet de {{ b.persons }}&nbsp;p × {{ b.weeks }}&nbsp;sem.</span>
+      }
+    }
+    @if (waiting().length) {
+      <span class="hint warn">{{ waiting().length }} en attente hors du vase.</span>
+    }
+  </div>
+}

@@ -1,0 +1,185 @@
+.panel {
+  position: fixed;
+  z-index: 50;
+  top: 16px;
+  right: 16px;
+  bottom: 16px;
+  width: 340px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 0 22px 20px;
+  border-radius: 24px;
+  background: #fbf8f2;
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 40px 80px -30px rgb(40 30 20 / 0.5);
+  animation: slide-in 0.4s cubic-bezier(0.2, 1, 0.3, 1) both;
+
+  // Bandeau de la couleur de la pierre.
+  &::before {
+    content: '';
+    display: block;
+    flex: none;
+    height: 10px;
+    margin: 0 -22px;
+    background: linear-gradient(90deg, var(--stone), color-mix(in oklab, var(--stone) 70%, white));
+  }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: -10px;
+}
+
+.kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  i {
+    width: 14px;
+    height: 11px;
+    border-radius: 40% 55% 45% 50%;
+    background: var(--stone);
+    box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.2);
+  }
+}
+
+.name {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 -8px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  &:hover {
+    background: var(--chip);
+  }
+  &:focus {
+    outline: 2px solid var(--water);
+    background: white;
+  }
+}
+
+section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.figures {
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--chip);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.label {
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.charge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  input {
+    width: 84px;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 10px;
+    background: white;
+    box-shadow: inset 0 0 0 1px var(--line);
+    color: var(--ink);
+    font: 600 16px var(--font-mono);
+    text-align: right;
+    &:focus {
+      outline: 2px solid var(--water);
+    }
+  }
+  em {
+    color: var(--ink-soft);
+    font-size: 12px;
+    font-style: normal;
+  }
+}
+
+select {
+  max-width: 190px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--chip);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.explain {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  line-height: 1.45;
+  strong {
+    color: var(--ink);
+  }
+}
+
+.where {
+  padding-top: 14px;
+  border-top: 1px dashed var(--line-strong);
+  p {
+    margin: 0;
+    font-size: 13.5px;
+  }
+  strong {
+    font-family: var(--font-mono);
+  }
+  span {
+    color: var(--ink-soft);
+  }
+  .air {
+    color: var(--ink-soft);
+    font-size: 12px;
+  }
+}
+
+footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 8px;
+}

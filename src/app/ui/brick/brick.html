@@ -1,0 +1,19 @@
+<div class="face">
+  @if (air() > 0.001) {
+    <div class="air" [style.height.%]="air() * 100"></div>
+  }
+  <span class="name">{{ project().name }}</span>
+  <span class="meta">
+    <strong>{{ dims().charge | number: '1.0-1' }}&nbsp;j/h</strong>
+    <span class="shape">{{ dims().persons }}&nbsp;p × {{ dims().weeks }}&nbsp;sem</span>
+  </span>
+  <app-icon class="mode" [name]="project().mode === 'fixed' ? 'lock' : 'move'" />
+</div>
+
+@if (resizable()) {
+  <span class="handle handle-e" title="Étirer dans le temps" (pointerdown)="startResize($event, 'e')"></span>
+  <span class="handle handle-n" title="Changer le nombre de personnes" (pointerdown)="startResize($event, 'n')"></span>
+  @if (project().mode === 'free') {
+    <span class="handle handle-ne" title="Étirer librement" (pointerdown)="startResize($event, 'ne')"></span>
+  }
+}

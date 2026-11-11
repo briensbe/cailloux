@@ -1,0 +1,115 @@
+@if (team(); as t) {
+  <dialog #dialog class="dialog" (close)="onClosed()" [style.--stone]="stones[color()].base">
+    <form (ngSubmit)="create()">
+      <header>
+        <p class="eyebrow">Nouveau caillou · {{ t.name }}</p>
+        <input
+          class="name"
+          name="name"
+          [(ngModel)]="name"
+          placeholder="Nom du projet"
+          autocomplete="off"
+          autofocus
+          spellcheck="false"
+        />
+      </header>
+
+      <div class="body">
+        <div class="fields">
+          <div class="field">
+            <label class="label" for="charge">Charge estimée</label>
+            <span class="charge">
+              <input id="charge" type="number" name="charge" min="0.5" step="0.5" required [(ngModel)]="charge" />
+              <em>jours-homme</em>
+            </span>
+            <span class="presets">
+              @for (v of presets; track v) {
+                <button type="button" [attr.aria-pressed]="charge() === v" (click)="charge.set(v)">{{ v }}</button>
+              }
+            </span>
+          </div>
+
+          <div class="field">
+            <label class="label" for="persons">
+              Personnes en parallèle <strong>{{ persons() }}</strong> / {{ t.size }}
+            </label>
+            <input id="persons" type="range" name="persons" min="1" [max]="t.size" [(ngModel)]="persons" />
+          </div>
+
+          <div class="field">
+            <span class="label">Quand on l'étire…</span>
+            <div class="segmented" role="radiogroup" aria-label="Mode de redimensionnement">
+              <button type="button" role="radio" [attr.aria-checked]="mode() === 'free'" (click)="mode.set('free')">
+                <app-icon name="move" /> Libre
+              </button>
+              <button type="button" role="radio" [attr.aria-checked]="mode() === 'fixed'" (click)="mode.set('fixed')">
+                <app-icon name="lock" /> Charge fixe
+              </button>
+            </div>
+            <p class="explain">
+              @if (mode() === 'free') {
+                Durée et personnes bougent librement, la charge suit.
+              } @else {
+                La charge est figée&nbsp;: étirer dans le temps libère des personnes.
+              }
+            </p>
+          </div>
+
+          <div class="field">
+            <span class="label">Pierre</span>
+            <div class="swatches">
+              @for (c of colors; track c) {
+                <button
+                  type="button"
+                  [style.--stone]="stones[c].base"
+                  [attr.aria-pressed]="color() === c"
+                  [attr.aria-label]="stones[c].label"
+                  [title]="stones[c].label"
+                  (click)="color.set(c)"
+                ></button>
+              }
+            </div>
+          </div>
+        </div>
+
+        <figure class="preview">
+          <div class="mini-vase" [style.width.px]="preview().w" [style.height.px]="preview().h">
+            @for (r of placed(); track $index) {
+              <span
+                class="taken"
+                [style.left.%]="pct(r.col, t.horizon)"
+                [style.bottom.%]="pct(r.row, t.size)"
+                [style.width.%]="pct(r.weeks, t.horizon)"
+                [style.height.%]="pct(r.persons, t.size)"
+              ></span>
+            }
+            <span
+              class="new"
+              [class.overflow]="!landing()"
+              [style.left.%]="pct(landing()?.col ?? 0, t.horizon)"
+              [style.bottom.%]="landing() ? pct(landing()!.row, t.size) : 104"
+              [style.width.%]="pct(dims().weeks, t.horizon)"
+              [style.height.%]="pct(dims().persons, t.size)"
+            ></span>
+          </div>
+          <figcaption>
+            <span class="kind">{{ kind() }}</span>
+            <span class="shape">
+              <strong>{{ dims().persons }}</strong> pers. pendant <strong>{{ dims().weeks }}</strong> sem.
+            </span>
+            @if (landing(); as l) {
+              <span class="fit ok">Tient dans le vase dès {{ l.label }}</span>
+            } @else {
+              <span class="fit ko">Le vase déborde&nbsp;: elle attendra à côté.</span>
+            }
+          </figcaption>
+        </figure>
+      </div>
+
+      <footer>
+        <button type="button" class="btn" (click)="close()">Annuler</button>
+        <button type="submit" class="btn btn-primary"><app-icon name="in" /> Déposer dans le vase</button>
+      </footer>
+    </form>
+  </dialog>
+}
