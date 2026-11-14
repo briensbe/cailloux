@@ -35,14 +35,14 @@ export class Inspector {
   protected readonly weeksRange = computed(() => {
     const p = this.project()!;
     const t = this.team()!;
-    if (p.mode === 'free') return { min: 1, max: t.horizon };
-    return { min: weeksFor(p.charge, t.size), max: Math.min(52, weeksFor(p.charge, 1)) };
+    if (p.mode === 'free') return { min: 1, max: this.store.window().weeks };
+    return { min: weeksFor(p.charge, t.size), max: weeksFor(p.charge, 1) };
   });
 
   protected readonly period = computed(() => {
     const p = this.project();
-    if (!p || p.col === null) return null;
-    const start = addDays(parseIsoDate(this.store.startDate()), p.col * 7);
+    if (!p || p.start === null) return null;
+    const start = parseIsoDate(p.start);
     // Le vendredi de la dernière semaine.
     const end = addDays(start, p.weeks * 7 - 3);
     return {

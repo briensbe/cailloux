@@ -11,9 +11,12 @@
 </div>
 
 @if (resizable()) {
-  <span class="handle handle-e" title="Étirer dans le temps" (pointerdown)="startResize($event, 'e')"></span>
+  <!-- Sur un bord coupé, la fin de la brique n'est pas à l'écran : pas de poignée de fin. -->
+  @if (!cutEnd()) {
+    <span class="handle handle-e" title="Étirer dans le temps" (pointerdown)="startResize($event, 'e')"></span>
+  }
   <span class="handle handle-n" title="Changer le nombre de personnes" (pointerdown)="startResize($event, 'n')"></span>
-  @if (project().mode === 'free') {
+  @if (project().mode === 'free' && !cutEnd()) {
     <span class="handle handle-ne" title="Étirer librement" (pointerdown)="startResize($event, 'ne')"></span>
   }
 }

@@ -29,35 +29,84 @@
     <li><i class="pebble water"></i>Eau</li>
   </ol>
 
-  <dl class="stats">
+  @let t = totals();
+  <dl class="stats" [attr.aria-label]="'Indicateurs ' + view.periodLabel()">
     <div>
       <dt>Équipes</dt>
-      <dd>{{ stats().teams }}</dd>
+      <dd>{{ t.teams }}</dd>
     </div>
     <div>
       <dt>Personnes</dt>
-      <dd>{{ stats().persons }}</dd>
+      <dd>{{ t.persons }}</dd>
     </div>
     <div>
       <dt>Capacité</dt>
-      <dd>{{ stats().capacity }}<small>j/h</small></dd>
+      <dd>{{ t.capacity | number: '1.0-0' }}<small>j/h</small></dd>
     </div>
     <div>
       <dt>Rempli</dt>
-      <dd>{{ stats().fill * 100 | number: '1.0-0' }}<small>%</small></dd>
+      <dd>{{ t.fill * 100 | number: '1.0-0' }}<small>%</small></dd>
+    </div>
+    <div [class.over]="t.remaining < 0">
+      <dt>{{ t.remaining < 0 ? 'Surcharge' : 'Reste' }}</dt>
+      <dd>{{ (t.remaining < 0 ? -t.remaining : t.remaining) | number: '1.0-0' }}<small>j/h</small></dd>
     </div>
   </dl>
+  <p class="stats-caption">
+    {{ view.periodLabel() }}
+    @if (t.waiting > 0) {
+      · {{ t.waiting | number: '1.0-1' }}&nbsp;j/h en attente
+    }
+    @if (store.outsideCount(); as n) {
+      <span class="warn">⚠ {{ n }} {{ n > 1 ? 'projets' : 'projet' }} hors fenêtre</span>
+    }
+    @if (store.overflowCount(); as n) {
+      <span class="warn">⚠ {{ n }} en débordement</span>
+    }
+  </p>
 </header>
 
 <nav class="toolbar" aria-label="Outils">
-  <label class="tool">
-    <span>Semaine de départ</span>
-    <input type="date" [value]="store.startDate()" (change)="setStartDate($event)" />
-  </label>
-  <label class="tool">
+  <div class="tool" role="group" aria-label="Fenêtre">
+    <span>Fenêtre</span>
+    <button type="button" class="btn btn-icon" (click)="store.shiftWindow(-1)" title="Une semaine plus tôt" aria-label="Une semaine plus tôt">‹</button>
+    <button type="button" class="btn" [disabled]="store.sliding()" (click)="store.windowToToday()" title="Revenir à la semaine en cours">Aujourd'hui</button>
+    <button type="button" class="btn btn-icon" (click)="store.shiftWindow(1)" title="Une semaine plus tard" aria-label="Une semaine plus tard">›</button>
+    <app-stepper
+      icon="clock"
+      [value]="store.window().weeks"
+      [max]="520"
+      [unit]="store.window().weeks > 1 ? 'semaines' : 'semaine'"
+      (changed)="store.setWindowWeeks($event)"
+    />
+    <small class="window-range">{{ windowLabel() }}</small>
+  </div>
+
+  <div class="tool" role="group" aria-label="Période">
+    <span>Période</span>
+    <div class="segmented" role="radiogroup" aria-label="Période d'analyse">
+      @for (p of presets; track p.id) {
+        <button type="button" role="radio" [attr.aria-checked]="view.periodChoice() === p.id" (click)="choosePeriod(p.id)">
+          {{ p.label }}
+        </button>
+      }
+      <button type="button" role="radio" [attr.aria-checked]="view.periodChoice() === 'custom'" (click)="choosePeriod('custom')">
+        Perso.
+      </button>
+    </div>
+    @if (view.periodChoice() === 'custom') {
+      <input type="date" aria-label="Début de la période" [value]="periodDates().from" (change)="setPeriodBound('from', $event)" />
+      <input type="date" aria-label="Fin de la période" [value]="periodDates().to" (change)="setPeriodBound('to', $event)" />
+    }
+  </div>
+
+  <div class="tool">
     <span>Zoom</span>
-    <input type="range" [min]="zoomMin" [max]="zoomMax" [value]="view.cellW()" (input)="setZoom($event)" />
-  </label>
+    <input type="range" aria-label="Zoom" [min]="zoomMin" [max]="zoomMax" [value]="view.cellW()" (input)="setZoom($event)" />
+    <button type="button" class="btn" [class.btn-primary]="view.fit()" [attr.aria-pressed]="view.fit()" (click)="view.fit.set(!view.fit())">
+      Tout voir
+    </button>
+  </div>
   <div class="history">
     <button type="button" class="btn btn-icon" (click)="store.undo()" [disabled]="!store.canUndo()" title="Annuler (Ctrl+Z)" aria-label="Annuler">
       <app-icon name="undo" />
@@ -71,7 +120,7 @@
   <button type="button" class="btn btn-primary" (click)="store.addTeam()"><app-icon name="plus" /> Nouvelle équipe</button>
 </nav>
 
-<main class="board">
+<main class="board" #board>
   @for (team of store.teams(); track team.id; let i = $index) {
     <app-reservoir [team]="team" [style.--i]="i" />
   } @empty {

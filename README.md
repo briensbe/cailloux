@@ -3,15 +3,23 @@
 Visualiser la capacité des équipes de dev avec la métaphore du professeur et de son vase :
 les gros cailloux d'abord, puis les petits, le sable, l'eau.
 
-- **Un vase par équipe** : la hauteur = le nombre de personnes, la largeur = l'horizon en semaines.
-- **Un projet = une brique** : largeur = semaines, hauteur = personnes en parallèle, surface = charge (1 case = 5 j/h).
+- **Un vase par équipe** : la hauteur = l'effectif, la largeur = la fenêtre de semaines, commune à toutes les équipes
+  (52 semaines glissantes par défaut, ajustable semaine par semaine, décalable vers le passé ou le futur, « tout voir »).
+- **Un projet = une brique** ancrée sur une vraie semaine de début : largeur = semaines, hauteur = personnes en parallèle,
+  surface = charge (1 case = 5 j/h). Les projets hors de la fenêtre gardent leurs dates et sont signalés au bord du vase.
+- **Une période d'analyse** (3 semaines, 3, 6 ou 12 mois, ou des dates au choix) : capacité, charge planifiée (dont l'air),
+  taux de remplissage, capacité restante et charge en attente, par équipe et au total. Vocabulaire : [GLOSSARY.md](GLOSSARY.md).
 - **Deux modes de redimensionnement** :
   - _Libre_ : on étire comme on veut, la charge suit la surface.
   - _Charge fixe_ : la surface est imposée ; plus de semaines = moins de personnes, et inversement.
 - **Glisser-déposer aimanté** : la brique se colle à la place libre la plus proche, jamais de chevauchement,
-  y compris d'un vase à l'autre. Un bac « hors du vase » accueille ce qui ne tient pas.
-- **« Le vase est-il plein ? »** verse l'eau dans les interstices et répond avec la capacité restante
+  y compris d'un vase à l'autre. Un bac « hors du vase » accueille les projets qu'on y range.
+- **Aucune saisie perdue** : réduire une équipe ou raccourcir la fenêtre ne déplace rien ; les briques concernées
+  sont signalées (débordement, hors fenêtre).
+- **« Le vase est-il plein ? »** verse l'eau dans les interstices de la période et répond avec la capacité restante
   et le plus gros projet qui passe encore.
+
+Les décisions d'architecture sont consignées dans [docs/adr](docs/adr).
 
 ## Prérequis
 

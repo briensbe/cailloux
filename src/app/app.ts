@@ -1,18 +1,29 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { DAYS_PER_WEEK, footprint } from './domain/capacity';
-import { boundsOf, PlanningStore } from './state/planning.store';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  ElementRef,
+  inject,
+  viewChild,
+} from '@angular/core';
+import { customPeriod, PERIOD_PRESETS, periodEndExclusive, periodFigures, PeriodPreset, sumFigures } from './domain/period';
+import { addDays, addWeeks, formatShort, parseIsoDate, toIsoDate } from './domain/weeks';
+import { PlanningStore } from './state/planning.store';
 import { CELL_H, ViewService, ZOOM_MAX, ZOOM_MIN } from './state/view.service';
 import { DragOverlay } from './ui/drag-overlay';
 import { Icon } from './ui/icon';
 import { Inspector } from './ui/inspector/inspector';
 import { ProjectDialog } from './ui/project-dialog/project-dialog';
 import { Reservoir } from './ui/reservoir/reservoir';
+import { Stepper } from './ui/stepper';
 import { Toasts } from './ui/toasts';
 
 @Component({
   selector: 'app-root',
-  imports: [Reservoir, Inspector, ProjectDialog, DragOverlay, Toasts, Icon, DecimalPipe],
+  imports: [Reservoir, Inspector, ProjectDialog, DragOverlay, Toasts, Icon, Stepper, DecimalPipe],
   templateUrl: './app.html',
   styleUrl: './app.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -30,25 +41,67 @@ export class App {
   protected readonly cellH = CELL_H;
   protected readonly zoomMin = ZOOM_MIN;
   protected readonly zoomMax = ZOOM_MAX;
+  protected readonly presets = PERIOD_PRESETS;
 
-  protected readonly stats = computed(() => {
+  private readonly board = viewChild.required<ElementRef<HTMLElement>>('board');
+
+  /** Indicateurs de la période, toutes équipes confondues. */
+  protected readonly totals = computed(() => {
     const teams = this.store.teams();
-    const capacity = teams.reduce((sum, t) => sum + footprint(boundsOf(t)), 0);
-    const free = teams.reduce((sum, t) => sum + this.store.occupancy(t.id).freeCells() * DAYS_PER_WEEK, 0);
+    const period = this.view.period();
     return {
       teams: teams.length,
       persons: teams.reduce((sum, t) => sum + t.size, 0),
-      capacity,
-      fill: capacity ? 1 - free / capacity : 0,
+      ...sumFigures(teams.map((t) => periodFigures(t.size, this.store.projectsOf(t.id), period))),
     };
   });
 
-  protected setZoom(event: Event): void {
-    this.view.cellW.set(Number((event.target as HTMLInputElement).value));
+  /** Libellé de la fenêtre : du premier lundi au dernier dimanche. */
+  protected readonly windowLabel = computed(() => {
+    const start = parseIsoDate(this.store.windowStart());
+    const end = addDays(parseIsoDate(addWeeks(this.store.windowStart(), this.store.window().weeks)), -1);
+    return `${formatShort(start)} → ${formatShort(end)} ${end.getFullYear()}`;
+  });
+
+  /** Bornes de la période personnalisée, pour les champs de date. */
+  protected readonly periodDates = computed(() => {
+    const period = this.view.period();
+    return { from: period.start, to: toIsoDate(addDays(parseIsoDate(periodEndExclusive(period)), -1)) };
+  });
+
+  constructor() {
+    // Le mode « tout voir » a besoin de la largeur réellement disponible pour les vases.
+    const destroyRef = inject(DestroyRef);
+    afterNextRender(() => {
+      const el = this.board().nativeElement;
+      const observer = new ResizeObserver(() => this.view.boardWidth.set(el.clientWidth));
+      observer.observe(el);
+      destroyRef.onDestroy(() => observer.disconnect());
+    });
   }
 
-  protected setStartDate(event: Event): void {
-    this.store.setStartDate((event.target as HTMLInputElement).value);
+  protected setZoom(event: Event): void {
+    this.view.setZoom(Number((event.target as HTMLInputElement).value));
+  }
+
+  protected choosePeriod(choice: PeriodPreset | 'custom'): void {
+    if (choice === 'custom') this.view.setCustomPeriod(this.view.period());
+    else this.view.periodChoice.set(choice);
+  }
+
+  protected setPeriodBound(bound: 'from' | 'to', event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    if (!value) return;
+    let { from, to } = this.periodDates();
+    // Une borne saisie au-delà de l'autre l'entraîne avec elle, plutôt que d'inverser la période.
+    if (bound === 'from') {
+      from = value;
+      if (to < from) to = from;
+    } else {
+      to = value;
+      if (from > to) from = to;
+    }
+    this.view.setCustomPeriod(customPeriod(from, to));
   }
 
   /** Raccourcis clavier globaux (ignorés pendant la saisie dans un champ). */

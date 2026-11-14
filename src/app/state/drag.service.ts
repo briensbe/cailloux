@@ -38,8 +38,12 @@ export class DragService {
   /** Brique qui vient d'être lâchée : ses transitions CSS sont coupées pendant l'atterrissage. */
   readonly landing = signal<string | null>(null);
 
-  /** Appelé au `pointerdown` sur une brique (dans un vase ou dans un bac d'attente). */
-  press(event: PointerEvent, project: Project): void {
+  /**
+   * Appelé au `pointerdown` sur une brique.
+   * `hiddenWeeks` : semaines coupées par le bord gauche de la fenêtre (projet déjà commencé).
+   * `mini` : la brique est une miniature du bac d'attente.
+   */
+  press(event: PointerEvent, project: Project, hiddenWeeks = 0, mini = false): void {
     if (event.button !== 0) return;
     event.preventDefault();
     const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
@@ -52,9 +56,14 @@ export class DragService {
         started = true;
         document.body.classList.add('is-dragging');
         // Les briques du bac sont en miniature : on ramène le point de prise à la taille réelle.
-        const w = project.weeks * this.view.cellW();
-        const h = project.persons * CELL_H;
-        const grab = { x: ((start.x - box.left) / box.width) * w, y: ((start.y - box.top) / box.height) * h };
+        // Une brique coupée à gauche n'en montre que la fin : on rajoute la partie cachée.
+        const cellW = this.view.cellW();
+        const grab = mini
+          ? {
+              x: ((start.x - box.left) / box.width) * project.weeks * cellW,
+              y: ((start.y - box.top) / box.height) * project.persons * CELL_H,
+            }
+          : { x: start.x - box.left + hiddenWeeks * cellW, y: start.y - box.top };
         this.drag.set({ project, grab, pointer: start, target: null });
       }
       const d = this.drag()!;
@@ -103,6 +112,10 @@ export class DragService {
       col: Math.round((left - box.left) / this.view.cellW()),
       row: Math.round((box.bottom - bottom) / CELL_H),
     };
+    // Un projet déjà commencé peut garder une partie avant le bord gauche : si la place visée
+    // est libre, on la prend telle quelle (l'aimant, lui, ne propose que des places visibles).
+    const exact = { ...desired, weeks: p.weeks, persons: p.persons };
+    if (desired.col < 0 && this.store.canOccupy(teamId, p.id, exact)) return { kind: 'grid', teamId, cell: desired };
     const cell = findNearestFree(desired, p, this.store.occupancy(teamId, p.id));
     return cell ? { kind: 'grid', teamId, cell } : null;
   }

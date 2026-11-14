@@ -245,3 +245,37 @@ h1 {
     padding: 20px 16px 60px;
   }
 }
+
+// ------------------------------------------------------------------ Période et avertissements
+
+.stats .over dd,
+.stats .over dt {
+  color: #a2401f;
+}
+
+.stats-caption {
+  grid-column: 1 / -1;
+  justify-self: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: -8px 0 0;
+  color: var(--water-deep);
+  font-size: 12.5px;
+  font-weight: 600;
+  .warn {
+    color: #a2401f;
+  }
+}
+
+.window-range {
+  color: var(--ink-soft);
+  font: 500 11.5px var(--font-mono);
+  white-space: nowrap;
+}
+
+.tool .segmented button {
+  padding: 6px 11px;
+  font-size: 12.5px;
+  white-space: nowrap;
+}

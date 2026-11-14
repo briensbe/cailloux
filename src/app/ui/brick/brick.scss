@@ -161,6 +161,60 @@
   }
 }
 
+// Vue d'ensemble : trop étroite pour du texte, la couleur suffit (détail au survol).
+@container (max-width: 34px) {
+  .name {
+    display: none;
+  }
+  .face {
+    padding: 0;
+  }
+}
+
+// ------------------------------------------------------------------ Bords coupés par la fenêtre
+
+// Le côté coupé est droit et dentelé : le projet continue hors de vue.
+:host(.cut-start) .face {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding-left: 14px;
+}
+
+:host(.cut-end) .face {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+:host(.cut-start) .face::before,
+:host(.cut-end) .face::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background:
+    linear-gradient(135deg, var(--paper) 35%, transparent 36%) 0 0 / 6px 8px repeat-y,
+    linear-gradient(45deg, var(--paper) 35%, transparent 36%) 0 4px / 6px 8px repeat-y;
+}
+
+:host(.cut-start) .face::before {
+  left: 0;
+}
+
+:host(.cut-end) .face::before {
+  right: 0;
+  transform: scaleX(-1);
+}
+
+// ------------------------------------------------------------------ Débordement
+
+// La brique dépasse l'effectif : elle reste en place, mais saute aux yeux.
+:host(.is-overflow) .face {
+  outline: 2px dashed #b4492b;
+  outline-offset: 1px;
+}
+
 // ------------------------------------------------------------------ Poignées
 
 .handle {

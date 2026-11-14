@@ -1,4 +1,4 @@
-import { compact, findFirstFit, findNearestFree, largestFreeRect, Occupancy, overlaps } from './geometry';
+import { canOccupy, compact, findFirstFit, findNearestFree, largestFreeRect, Occupancy, overlaps } from './geometry';
 
 describe('geometry', () => {
   const bounds = { weeks: 6, persons: 3 };
@@ -62,5 +62,32 @@ describe('geometry', () => {
     expect(moved.get('a')).toEqual({ col: 0, row: 0 });
     // b glisse jusqu'à buter contre a, qui occupe désormais le fond des semaines 0 et 1.
     expect(moved.get('b')).toEqual({ col: 2, row: 0 });
+  });
+
+  it('cherche la première place à partir d’une semaine donnée', () => {
+    const occ = new Occupancy(bounds, []);
+    expect(findFirstFit({ weeks: 2, persons: 1 }, occ, 3)).toEqual({ col: 3, row: 0 });
+    expect(findFirstFit({ weeks: 2, persons: 1 }, occ, 5)).toBeNull();
+  });
+
+  it('tasse sans passer sous la semaine en cours ni déplacer les projets commencés', () => {
+    const items = [
+      { id: 'commence', col: -2, row: 0, weeks: 3, persons: 1 },
+      { id: 'futur', col: 4, row: 0, weeks: 2, persons: 1 },
+      { id: 'haut', col: 3, row: 1, weeks: 1, persons: 1 },
+    ];
+    const moved = compact(items, 0);
+    expect(moved.get('commence')).toEqual({ col: -2, row: 0 });
+    // La colonne 0 du fond est encore prise par le projet commencé.
+    expect(moved.get('futur')).toEqual({ col: 1, row: 0 });
+    expect(moved.get('haut')).toEqual({ col: 0, row: 1 });
+  });
+
+  it('autorise une brique commencée avant la fenêtre, dans l’effectif et avant le bord droit', () => {
+    const others = [{ col: 2, row: 0, weeks: 2, persons: 1 }];
+    expect(canOccupy({ col: -3, row: 0, weeks: 5, persons: 1 }, others, bounds)).toBe(true);
+    expect(canOccupy({ col: -3, row: 0, weeks: 6, persons: 1 }, others, bounds)).toBe(false);
+    expect(canOccupy({ col: 4, row: 2, weeks: 2, persons: 2 }, others, bounds)).toBe(false);
+    expect(canOccupy({ col: 5, row: 0, weeks: 2, persons: 1 }, others, bounds)).toBe(false);
   });
 });

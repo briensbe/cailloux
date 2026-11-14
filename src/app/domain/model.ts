@@ -2,9 +2,9 @@
  * Modèle métier de « Cailloux ».
  *
  * Chaque équipe possède un vase : une grille dont
- *  - l'axe X compte les semaines (l'horizon de planification),
+ *  - l'axe X compte les semaines de la fenêtre, commune à tous les vases,
  *  - l'axe Y compte les personnes de l'équipe (ligne 0 = fond du vase).
- * Un projet est une brique rectangulaire posée dans cette grille :
+ * Un projet est une brique rectangulaire ancrée sur une semaine réelle :
  * largeur = semaines, hauteur = personnes en parallèle, surface = charge.
  */
 
@@ -41,10 +41,8 @@ export const STONES: Record<StoneColor, { label: string; base: string; ink: stri
 export interface Team {
   id: string;
   name: string;
-  /** Nombre de personnes : la hauteur du vase. */
+  /** Effectif : la hauteur du vase. */
   size: number;
-  /** Nombre de semaines visibles : la largeur du vase. */
-  horizon: number;
 }
 
 export interface Project {
@@ -57,15 +55,23 @@ export interface Project {
   persons: number;
   mode: LoadMode;
   color: StoneColor;
-  /** Semaine de début (index de colonne). `null` = la brique attend hors du vase. */
-  col: number | null;
-  /** Première ligne occupée en partant du fond du vase. `null` = hors du vase. */
+  /** Lundi de la semaine de début (ISO `yyyy-mm-dd`). `null` = la brique attend dans le bac. */
+  start: string | null;
+  /** Première ligne occupée en partant du fond du vase. `null` = dans le bac. */
   row: number | null;
 }
 
+export const DEFAULT_WINDOW_WEEKS = 52;
+
+/** Les semaines affichées, communes à tous les vases. */
+export interface PlanningWindow {
+  /** Lundi de la première semaine, ou `null` pour une fenêtre glissante qui suit la semaine en cours. */
+  start: string | null;
+  weeks: number;
+}
+
 export interface PlanningState {
-  /** Lundi de la première semaine affichée, au format ISO `yyyy-mm-dd`. */
-  startDate: string;
+  window: PlanningWindow;
   teams: Team[];
   projects: Project[];
 }

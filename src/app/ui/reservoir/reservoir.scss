@@ -82,6 +82,33 @@
   strong {
     color: var(--ink);
   }
+  .period-name {
+    color: var(--water-deep);
+    font-weight: 600;
+  }
+  .air {
+    font-size: 12px;
+  }
+  .over,
+  .alert,
+  .fits.ko {
+    color: #a2401f;
+  }
+  .fits {
+    margin-left: 4px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--water) 14%, transparent);
+    color: var(--water-deep);
+    font-size: 12px;
+    font-weight: 600;
+    &.ko {
+      background: rgb(180 73 43 / 0.12);
+    }
+  }
+  .alert {
+    font-weight: 600;
+  }
 }
 
 .bar {
@@ -98,6 +125,9 @@
     border-radius: inherit;
     background: linear-gradient(90deg, #6b5a4a, var(--ink));
     transition: width 0.5s cubic-bezier(0.3, 1.2, 0.4, 1);
+  }
+  &.over span {
+    background: linear-gradient(90deg, #c8643b, #a2401f);
   }
 }
 
@@ -203,13 +233,60 @@
 
 // ------------------------------------------------------------------ L'eau
 
+// L'eau ne monte que dans les colonnes de la période (position posée par le gabarit).
 .water {
   position: absolute;
-  inset: 0;
+  top: 0;
+  bottom: 0;
   z-index: 1;
   overflow: hidden;
-  border-radius: inherit;
   pointer-events: none;
+}
+
+// ------------------------------------------------------------------ Période
+
+.period-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 0;
+  background: color-mix(in oklab, var(--water) 9%, transparent);
+  box-shadow:
+    inset 2px 0 0 color-mix(in oklab, var(--water) 45%, transparent),
+    inset -2px 0 0 color-mix(in oklab, var(--water) 45%, transparent);
+  pointer-events: none;
+  &.selecting {
+    background: color-mix(in oklab, var(--water) 18%, transparent);
+  }
+}
+
+// ------------------------------------------------------------------ Hors fenêtre
+
+.vase-area {
+  position: relative;
+}
+
+.hidden-chip {
+  position: absolute;
+  z-index: 8;
+  top: -22px;
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 600 11px var(--font-body);
+  white-space: nowrap;
+  cursor: pointer;
+  &.before {
+    left: 0;
+  }
+  &.after {
+    right: 0;
+  }
+  &:hover {
+    background: #2b3a41;
+  }
 }
 
 .water-fill {
@@ -326,6 +403,12 @@
   margin: 0;
   padding: 8px var(--wall) 0;
   list-style: none;
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+  li.in-period {
+    background: color-mix(in oklab, var(--water) 9%, transparent);
+  }
   li {
     position: relative;
     flex: none;
@@ -380,6 +463,24 @@
 
 :host(.compact) .x-axis .d {
   display: none;
+}
+
+// Vue d'ensemble : seuls les mois et les disponibilités restent lisibles.
+:host(.tiny) .x-axis {
+  .n {
+    display: none;
+  }
+  .m {
+    left: 2px;
+    font-size: 8.5px;
+    letter-spacing: 0.02em;
+  }
+  .free {
+    padding: 0;
+    min-width: 0;
+    font-size: 9px;
+    background: transparent;
+  }
 }
 
 // ------------------------------------------------------------------ Bac d'attente

@@ -14,8 +14,8 @@ import { FormsModule } from '@angular/forms';
 import { initialDims } from '../../domain/capacity';
 import { findFirstFit, Rect } from '../../domain/geometry';
 import { LoadMode, StoneColor, STONE_COLORS, STONES, stoneKind } from '../../domain/model';
-import { addDays, formatShort, isoWeek, parseIsoDate } from '../../domain/weeks';
-import { PlanningStore, rectOf } from '../../state/planning.store';
+import { addWeeks, formatShort, isoWeek, parseIsoDate } from '../../domain/weeks';
+import { PlanningStore } from '../../state/planning.store';
 import { CELL_H, ViewService } from '../../state/view.service';
 import { Icon } from '../icon';
 
@@ -58,31 +58,43 @@ export class ProjectDialog {
   });
   protected readonly kind = computed(() => stoneKind(this.dims().charge));
 
-  /** Où la brique tomberait si on la déposait maintenant. */
+  protected readonly windowWeeks = computed(() => this.store.window().weeks);
+
+  /** Où la brique tomberait si on la déposait maintenant (à partir de la semaine en cours). */
   protected readonly landing = computed(() => {
     const t = this.team();
     if (!t) return null;
-    const cell = findFirstFit(this.dims(), this.store.occupancy(t.id));
+    const cell = findFirstFit(this.dims(), this.store.occupancy(t.id), Math.max(0, this.store.todayCol()));
     if (!cell) return null;
-    const monday = addDays(parseIsoDate(this.store.startDate()), cell.col * 7);
+    const monday = parseIsoDate(addWeeks(this.store.windowStart(), cell.col));
     return { ...cell, label: `S${isoWeek(monday)}, ${formatShort(monday)}` };
   });
 
+  /** Semaines à ajouter à la fenêtre pour que le projet tienne, quand il ne tient pas. */
+  protected readonly extension = computed(() => {
+    const t = this.team();
+    if (!t || this.landing()) return null;
+    return this.store.extensionFor(t.id, this.dims());
+  });
+
+  /** Les briques de l'équipe dans la fenêtre, coupées à ses bords. */
   protected readonly placed = computed(() => {
     const t = this.team();
     if (!t) return [];
+    const W = this.windowWeeks();
     return this.store
-      .projects()
-      .filter((p) => p.teamId === t.id)
-      .map(rectOf)
-      .filter((r): r is Rect => r !== null);
+      .projectsOf(t.id)
+      .map((p) => this.store.windowRect(p))
+      .filter((r): r is Rect => r !== null)
+      .map((r) => ({ ...r, col: Math.max(0, r.col), weeks: Math.min(W, r.col + r.weeks) - Math.max(0, r.col) }))
+      .filter((r) => r.weeks > 0);
   });
 
   /** Le vase miniature garde les proportions du vrai. */
   protected readonly preview = computed(() => {
     const t = this.team();
     if (!t) return { w: 0, h: 0 };
-    const w = t.horizon * this.view.cellW();
+    const w = this.windowWeeks() * this.view.cellW();
     const h = t.size * CELL_H;
     const scale = Math.min(PREVIEW_MAX_W / w, PREVIEW_MAX_H / h);
     return { w: w * scale, h: h * scale };
@@ -114,16 +126,18 @@ export class ProjectDialog {
     return (value / total) * 100;
   }
 
-  protected create(): void {
+  /** `extend` : allonger la fenêtre juste assez pour que le projet tienne, plutôt que de le mettre au bac. */
+  protected create(extend = false): void {
     const t = this.team();
     if (!t || !(this.charge() > 0)) return;
-    this.store.addProject(t.id, {
+    const draft = {
       name: this.name(),
       charge: this.charge(),
       persons: this.persons(),
       mode: this.mode(),
       color: this.color(),
-    });
+    };
+    this.store.addProject(t.id, draft, extend);
     this.close();
   }
 

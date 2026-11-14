@@ -107,9 +107,25 @@ function at(col: number, row: number, size: Size): Rect {
   return { col, row, weeks: size.weeks, persons: size.persons };
 }
 
-/** Première place libre : la semaine la plus tôt, puis le plus près du fond. */
-export function findFirstFit(size: Size, occ: Occupancy): Cell | null {
-  for (let col = 0; col + size.weeks <= occ.bounds.weeks; col++) {
+/**
+ * La brique peut-elle occuper ce rectangle ? Variante de `Occupancy.isFree` pour les gestes
+ * sur une brique déjà posée : elle peut commencer avant le bord gauche (projet commencé),
+ * mais doit rester sous l'effectif, avant le bord droit et sans chevaucher ses voisines.
+ */
+export function canOccupy(r: Rect, others: readonly Rect[], bounds: Bounds): boolean {
+  return (
+    r.row >= 0 &&
+    r.weeks >= 1 &&
+    r.persons >= 1 &&
+    r.row + r.persons <= bounds.persons &&
+    r.col + r.weeks <= bounds.weeks &&
+    others.every((o) => !overlaps(r, o))
+  );
+}
+
+/** Première place libre à partir de `fromCol` : la semaine la plus tôt, puis le plus près du fond. */
+export function findFirstFit(size: Size, occ: Occupancy, fromCol = 0): Cell | null {
+  for (let col = Math.max(0, fromCol); col + size.weeks <= occ.bounds.weeks; col++) {
     for (let row = 0; row + size.persons <= occ.bounds.persons; row++) {
       if (occ.isFree(at(col, row, size))) return { col, row };
     }
@@ -154,20 +170,22 @@ export function largestFreeRect(occ: Occupancy): Size | null {
 }
 
 /**
- * « Secouer le vase » : chaque brique glisse le plus tôt possible dans le temps,
- * puis tombe vers le fond, jusqu'à ce que plus rien ne bouge.
- * Toutes les positions intermédiaires restent valides : on ne crée jamais de chevauchement.
+ * « Secouer le vase » : chaque brique glisse le plus tôt possible dans le temps, sans passer
+ * sous la colonne `floor` (la semaine en cours), puis tombe vers le fond, jusqu'à ce que plus
+ * rien ne bouge. Les briques qui commencent avant `floor` sont des obstacles fixes : on ne
+ * réécrit pas le passé. Toutes les positions intermédiaires restent valides.
  */
-export function compact<T extends Rect & { id: string }>(items: readonly T[]): Map<string, Cell> {
+export function compact<T extends Rect & { id: string }>(items: readonly T[], floor = 0): Map<string, Cell> {
   const rects = items.map((i) => ({ id: i.id, col: i.col, row: i.row, weeks: i.weeks, persons: i.persons }));
+  const movable = rects.filter((r) => r.col >= floor);
   const fits = (r: Rect, self: Rect) =>
-    r.col >= 0 && r.row >= 0 && rects.every((o) => o === self || !overlaps(r, o));
+    r.col >= floor && r.row >= 0 && rects.every((o) => o === self || !overlaps(r, o));
 
   let moved = true;
   for (let pass = 0; moved && pass < 100; pass++) {
     moved = false;
-    rects.sort((a, b) => a.col - b.col || a.row - b.row);
-    for (const r of rects) {
+    movable.sort((a, b) => a.col - b.col || a.row - b.row);
+    for (const r of movable) {
       while (fits({ ...r, col: r.col - 1 }, r)) {
         r.col--;
         moved = true;

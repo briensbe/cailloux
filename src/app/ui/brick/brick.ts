@@ -2,6 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { Dims, fillRatio } from '../../domain/capacity';
 import { Project, STONES } from '../../domain/model';
+import { addDays, addWeeks, formatShort, parseIsoDate } from '../../domain/weeks';
 import { Icon } from '../icon';
 
 export type ResizeHandle = 'e' | 'n' | 'ne';
@@ -21,6 +22,8 @@ export type ResizeHandle = 'e' | 'n' | 'ne';
     '[style.--stone-ink]': 'stone().ink',
     '[class.is-fixed]': "project().mode === 'fixed'",
     '[class.is-selected]': 'selected()',
+    '[class.cut-start]': 'cutStart()',
+    '[class.cut-end]': 'cutEnd()',
     '[attr.title]': 'tooltip()',
   },
 })
@@ -30,18 +33,29 @@ export class Brick {
   readonly dims = input.required<Dims>();
   readonly selected = input(false);
   readonly resizable = input(false);
+  /** La brique continue avant le bord gauche de la fenêtre (projet déjà commencé). */
+  readonly cutStart = input(false);
+  /** La brique continue après le bord droit de la fenêtre. */
+  readonly cutEnd = input(false);
   readonly resizeStart = output<{ event: PointerEvent; handle: ResizeHandle }>();
 
   protected readonly stone = computed(() => STONES[this.project().color]);
   /** Part de « l'air » dans la brique quand la charge ne remplit pas toutes ses cases. */
   protected readonly air = computed(() => 1 - fillRatio(this.dims()));
   protected readonly tooltip = computed(() => {
+    const p = this.project();
     const d = this.dims();
-    const mode = this.project().mode === 'fixed' ? 'charge fixe' : 'libre';
-    return `${this.project().name} — ${d.charge} j/h · ${d.persons} pers. × ${d.weeks} sem. (${mode})`;
+    const mode = p.mode === 'fixed' ? 'charge fixe' : 'libre';
+    const when = p.start ? ` · du ${formatShort(parseIsoDate(p.start))} au ${formatShort(lastFriday(p.start, d.weeks))}` : '';
+    return `${p.name} — ${d.charge} j/h · ${d.persons} pers. × ${d.weeks} sem. (${mode})${when}`;
   });
 
   protected startResize(event: PointerEvent, handle: ResizeHandle): void {
     this.resizeStart.emit({ event, handle });
   }
+}
+
+/** Vendredi de la dernière semaine d'une brique. */
+function lastFriday(start: string, weeks: number): Date {
+  return addDays(parseIsoDate(addWeeks(start, weeks)), -3);
 }

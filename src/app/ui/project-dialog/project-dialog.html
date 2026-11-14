@@ -77,18 +77,18 @@
             @for (r of placed(); track $index) {
               <span
                 class="taken"
-                [style.left.%]="pct(r.col, t.horizon)"
+                [style.left.%]="pct(r.col, windowWeeks())"
                 [style.bottom.%]="pct(r.row, t.size)"
-                [style.width.%]="pct(r.weeks, t.horizon)"
+                [style.width.%]="pct(r.weeks, windowWeeks())"
                 [style.height.%]="pct(r.persons, t.size)"
               ></span>
             }
             <span
               class="new"
               [class.overflow]="!landing()"
-              [style.left.%]="pct(landing()?.col ?? 0, t.horizon)"
+              [style.left.%]="pct(landing()?.col ?? 0, windowWeeks())"
               [style.bottom.%]="landing() ? pct(landing()!.row, t.size) : 104"
-              [style.width.%]="pct(dims().weeks, t.horizon)"
+              [style.width.%]="pct(dims().weeks, windowWeeks())"
               [style.height.%]="pct(dims().persons, t.size)"
             ></span>
           </div>
@@ -101,6 +101,11 @@
               <span class="fit ok">Tient dans le vase dès {{ l.label }}</span>
             } @else {
               <span class="fit ko">Le vase déborde&nbsp;: elle attendra à côté.</span>
+              @if (extension(); as k) {
+                <button type="button" class="btn btn-water extend" (click)="create(true)">
+                  Agrandir la fenêtre (+{{ k }}&nbsp;sem.) pour la faire tenir
+                </button>
+              }
             }
           </figcaption>
         </figure>

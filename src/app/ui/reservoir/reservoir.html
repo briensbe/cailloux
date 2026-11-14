@@ -15,19 +15,12 @@
       [unit]="team().size > 1 ? 'personnes' : 'personne'"
       (changed)="store.setTeamSize(team().id, $event)"
     />
-    <app-stepper
-      icon="clock"
-      [value]="team().horizon"
-      [max]="52"
-      [unit]="team().horizon > 1 ? 'semaines' : 'semaine'"
-      (changed)="store.setHorizon(team().id, $event)"
-    />
   </div>
   <div class="actions">
     <button type="button" class="btn btn-primary" (click)="view.newProjectFor.set(team().id)">
       <app-icon name="plus" /> Caillou
     </button>
-    <button type="button" class="btn" (click)="store.compactTeam(team().id)" title="Tout faire glisser vers le début et vers le fond">
+    <button type="button" class="btn" (click)="store.compactTeam(team().id)" title="Tout faire glisser vers la semaine en cours et vers le fond">
       <app-icon name="shake" /> Tasser
     </button>
     <button type="button" class="btn btn-water" [class.on]="water()" (click)="water.set(!water())">
@@ -39,23 +32,52 @@
   </div>
 </header>
 
+@let f = figures();
 <div class="gauge">
-  <div class="bar" role="meter" aria-label="Remplissage" [attr.aria-valuenow]="fill() * 100 | number: '1.0-0'" aria-valuemin="0" aria-valuemax="100">
-    <span [style.width.%]="fill() * 100"></span>
+  <div class="bar" [class.over]="f.remaining < 0" role="meter" aria-label="Taux de remplissage" [attr.aria-valuenow]="f.fill * 100 | number: '1.0-0'" aria-valuemin="0" aria-valuemax="100">
+    <span [style.width.%]="(f.fill > 1 ? 1 : f.fill) * 100"></span>
   </div>
   <p>
-    <strong>{{ fill() * 100 | number: '1.0-0' }}&nbsp;%</strong> rempli ·
-    <span class="mono">{{ freeDays() }}&nbsp;j/h</span> libres sur {{ capacity() }} ·
-    @if (biggest(); as b) {
-      plus gros caillou qui passe encore&nbsp;: <strong>{{ b.persons }}&nbsp;p × {{ b.weeks }}&nbsp;sem</strong>
+    <span class="period-name">{{ view.periodLabel() }}</span> ·
+    <strong>{{ f.fill * 100 | number: '1.0-0' }}&nbsp;%</strong> rempli ·
+    planifié <span class="mono">{{ f.planned | number: '1.0-0' }}&nbsp;j/h</span> sur {{ f.capacity | number: '1.0-0' }}
+    @if (f.air > 0) {
+      <span class="air">(dont {{ f.air | number: '1.0-1' }}&nbsp;d'air)</span>
+    }
+    ·
+    @if (f.remaining >= 0) {
+      reste <strong class="mono">{{ f.remaining | number: '1.0-0' }}&nbsp;j/h</strong>
     } @else {
-      plus aucune place
+      <strong class="over">surcharge {{ -f.remaining | number: '1.0-0' }}&nbsp;j/h</strong>
+    }
+    @if (f.waiting > 0) {
+      · en attente <span class="mono">{{ f.waiting | number: '1.0-1' }}&nbsp;j/h</span>
+      <span class="fits" [class.ko]="!f.waitingFits">{{ f.waitingFits ? 'tiendrait' : 'ne tiendrait pas' }}</span>
+    }
+    @if (overflowCount()) {
+      · <span class="alert">⚠ {{ overflowCount() }} en débordement</span>
     }
   </p>
 </div>
 
 <div class="scroller">
-  <div class="vase-area" data-drop-kind="grid" [attr.data-drop-team]="team().id">
+  <div
+    class="vase-area"
+    data-drop-kind="grid"
+    [attr.data-drop-team]="team().id"
+    [style.padding-top.px]="headroom() * cellH"
+  >
+    @if (hidden().before.length; as n) {
+      <button type="button" class="hidden-chip before" [title]="hiddenTitle(hidden().before)" (click)="store.revealOutside(team().id, 'before')">
+        ‹ {{ n }} {{ n > 1 ? 'projets' : 'projet' }}
+      </button>
+    }
+    @if (hidden().after.length; as n) {
+      <button type="button" class="hidden-chip after" [title]="hiddenTitle(hidden().after)" (click)="store.revealOutside(team().id, 'after')">
+        {{ n }} {{ n > 1 ? 'projets' : 'projet' }} ›
+      </button>
+    }
+
     <ol class="y-axis" aria-hidden="true">
       @for (n of rows(); track n) {
         <li [style.height.px]="cellH"><span>{{ n }}</span></li>
@@ -70,26 +92,43 @@
         [style.height.px]="gridH()"
         (pointerdown)="onGridPointerDown($event)"
       >
-        <div class="water" [class.on]="water()"><div class="water-fill"></div></div>
+        @if (periodCols(); as pc) {
+          <div
+            class="period-band"
+            [class.selecting]="selecting()"
+            [style.left.px]="pc.from * view.cellW()"
+            [style.width.px]="(pc.to - pc.from) * view.cellW()"
+          ></div>
+          <div
+            class="water"
+            [class.on]="water()"
+            [style.left.px]="pc.from * view.cellW()"
+            [style.width.px]="(pc.to - pc.from) * view.cellW()"
+          >
+            <div class="water-fill"></div>
+          </div>
+        }
 
         @if (todayX(); as x) {
           <div class="today" [style.left.px]="x"><span>aujourd'hui</span></div>
         }
 
         @if (ghost(); as g) {
-          @let r = rect(g);
+          @let gr = rect(g);
           <div
             class="ghost"
             [style.--stone]="g.stone"
-            [style.left.px]="r.left"
-            [style.bottom.px]="r.bottom"
-            [style.width.px]="r.width"
-            [style.height.px]="r.height"
+            [style.left.px]="gr.left"
+            [style.bottom.px]="gr.bottom"
+            [style.width.px]="gr.width"
+            [style.height.px]="gr.height"
           ></div>
         }
 
-        @for (p of placed(); track p.id) {
+        @for (item of visible(); track item.p.id) {
+          @let p = item.p;
           @let d = dimsOf(p);
+          @let box = drawn(item);
           <app-brick
             tabindex="0"
             [attr.data-brick-id]="p.id"
@@ -97,16 +136,19 @@
             [dims]="d"
             [selected]="store.selectedId() === p.id"
             [resizable]="true"
-            [style.left.px]="p.col! * view.cellW()"
-            [style.bottom.px]="p.row! * cellH"
-            [style.width.px]="d.weeks * view.cellW()"
-            [style.height.px]="d.persons * cellH"
+            [cutStart]="box.cutStart"
+            [cutEnd]="box.cutEnd"
+            [style.left.px]="box.left"
+            [style.bottom.px]="box.bottom"
+            [style.width.px]="box.width"
+            [style.height.px]="box.height"
+            [class.is-overflow]="item.r.row + item.r.persons > team().size"
             [class.is-dragging]="draggingId() === p.id"
             [class.is-landing]="dnd.landing() === p.id"
             [class.is-resizing]="resizing()?.id === p.id"
             [class.is-dropped]="store.justDropped() === p.id"
-            (pointerdown)="dnd.press($event, p)"
-            (resizeStart)="startResize($event.event, p, $event.handle)"
+            (pointerdown)="dnd.press($event, p, box.cutStart ? -item.r.col : 0)"
+            (resizeStart)="startResize($event.event, item, $event.handle)"
             (keydown.enter)="store.select(p.id)"
           />
         }
@@ -114,9 +156,9 @@
     </div>
 
     <span class="x-legend" title="Personnes encore disponibles chaque semaine">dispo</span>
-    <ol class="x-axis">
+    <ol class="x-axis" title="Glisser pour choisir une période" (pointerdown)="startPeriodSelection($event)">
       @for (w of weeks(); track w.index) {
-        <li [style.width.px]="view.cellW()" [class.month-start]="w.month">
+        <li [style.width.px]="view.cellW()" [class.month-start]="w.month" [class.in-period]="w.inPeriod">
           @if (w.month) {
             <span class="m">{{ w.month }}</span>
           }
@@ -147,7 +189,7 @@
       [style.width.px]="m.w"
       [style.height.px]="m.h"
       [class.is-dragging]="draggingId() === p.id"
-      (pointerdown)="dnd.press($event, p)"
+      (pointerdown)="dnd.press($event, p, 0, true)"
       (keydown.enter)="store.select(p.id)"
     />
   } @empty {
@@ -157,11 +199,13 @@
 
 @if (water()) {
   <div class="bubble" role="status">
-    <span class="q">« Est-ce que ce vase est plein&nbsp;? »</span>
-    @if (freeDays() === 0) {
+    <span class="q">« Est-ce que ce vase est plein&nbsp;? » <em>({{ view.periodLabel() }})</em></span>
+    @if (f.remaining < 0) {
+      <strong>Il déborde&nbsp;!</strong> Surcharge de <b>{{ -f.remaining | number: '1.0-0' }}&nbsp;j/h</b> sur la période.
+    } @else if (f.remaining === 0) {
       <strong>Oui.</strong> Cette fois, il est vraiment plein.
     } @else {
-      <strong>Non&nbsp;!</strong> Il reste encore <b>{{ freeDays() }}&nbsp;j/h</b> d'eau entre les cailloux.
+      <strong>Non&nbsp;!</strong> Il reste encore <b>{{ f.remaining | number: '1.0-0' }}&nbsp;j/h</b> d'eau entre les cailloux.
       @if (biggest(); as b) {
         <span class="hint">De quoi glisser un projet de {{ b.persons }}&nbsp;p × {{ b.weeks }}&nbsp;sem.</span>
       }
