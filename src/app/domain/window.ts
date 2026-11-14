@@ -6,7 +6,7 @@
  * ou dépasser la fenêtre (projet au-delà du bord droit).
  */
 import { Bounds, findFirstFit, Occupancy, Rect, Size } from './geometry';
-import { PlanningWindow, Project } from './model';
+import { PlanningWindow, Project, Team } from './model';
 import { currentMonday, weeksBetween } from './weeks';
 
 /** Premier lundi affiché : celui de la semaine en cours quand la fenêtre est glissante. */
@@ -47,4 +47,26 @@ export function extensionToFit(size: Size, rects: readonly Rect[], bounds: Bound
     if (findFirstFit(size, occ, fromCol)) return extra;
   }
   return null;
+}
+
+/**
+ * Personnes libres chaque semaine de la fenêtre, toutes équipes confondues (bande de l'Étagère).
+ * Les lignes en débordement ne comptent pas : une équipe pleine compte 0, jamais moins.
+ * Le bac commun n'entre pas dans ce décompte.
+ */
+export function freePersonsPerWeek(
+  teams: readonly Team[],
+  projects: readonly Project[],
+  windowStart: string,
+  weeks: number,
+): number[] {
+  const total = new Array<number>(weeks).fill(0);
+  for (const team of teams) {
+    const rects = projects
+      .filter((p) => p.teamId === team.id)
+      .map((p) => toWindowRect(p, windowStart))
+      .filter((r): r is Rect => r !== null);
+    new Occupancy({ weeks, persons: team.size }, rects).freePerWeek().forEach((n, i) => (total[i] += n));
+  }
+  return total;
 }

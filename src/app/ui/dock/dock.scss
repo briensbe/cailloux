@@ -1,0 +1,115 @@
+:host {
+  display: block;
+}
+
+.dock {
+  position: fixed;
+  z-index: 40;
+  right: 16px;
+  bottom: 12px;
+  left: 16px;
+  border-radius: 20px;
+  background: rgb(248 244 236 / 0.92);
+  backdrop-filter: blur(12px) saturate(1.3);
+  box-shadow:
+    0 0 0 1px var(--line-strong),
+    0 -14px 34px -22px rgb(40 30 20 / 0.55);
+  transition:
+    right 0.35s cubic-bezier(0.2, 1, 0.3, 1),
+    box-shadow 0.2s,
+    background-color 0.2s;
+  &.active {
+    background-color: color-mix(in oklab, var(--water) 12%, rgb(248 244 236));
+    box-shadow:
+      0 0 0 2px var(--water),
+      0 -14px 34px -22px rgb(40 30 20 / 0.55);
+  }
+}
+
+// L'inspecteur occupe la droite de l'écran : le dock s'arrête avant lui.
+:host-context(.with-inspector) .dock {
+  @media (min-width: 1100px) {
+    right: 372px;
+  }
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 9px 12px 9px 10px;
+  font-size: 12.5px;
+}
+
+.toggle {
+  width: 30px;
+  height: 30px;
+}
+
+.chevron {
+  display: inline-block;
+  transition: transform 0.2s;
+  &.up {
+    transform: rotate(180deg);
+  }
+}
+
+.title {
+  font: 700 15px var(--font-display);
+}
+
+.count {
+  color: var(--ink-soft);
+}
+
+.fits {
+  padding: 1px 8px;
+  border-radius: 9px;
+  background: #dff1e6;
+  color: #1f6b3e;
+  font-size: 11px;
+  font-weight: 700;
+  &.ko {
+    background: #fbe3df;
+    color: #a5281b;
+  }
+}
+
+.against {
+  color: var(--ink-soft);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.ro {
+  color: var(--ink-faint);
+  font-size: 11.5px;
+  font-style: italic;
+}
+
+.items {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  overflow-x: auto;
+  min-height: 56px;
+  padding: 2px 14px 14px;
+}
+
+app-brick {
+  flex: none;
+}
+
+.read-only app-brick {
+  cursor: default;
+}
+
+.hint {
+  align-self: center;
+  color: var(--ink-faint);
+  font-size: 13px;
+  font-style: italic;
+}

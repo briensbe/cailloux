@@ -80,3 +80,14 @@ export function freeResize(s: Dims, weeks: number, persons: number): Dims {
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
+
+/**
+ * Forme d'un projet qui entre dans un vase de `teamSize` personnes (spec `bac-commun`).
+ * S'il est trop haut, on le ramène à l'effectif en gardant sa charge : la durée s'allonge.
+ * On passe par `initialDims` et non par `withPersons` : en mode libre, `withPersons` ferait
+ * suivre la charge à la surface, donc la ferait baisser.
+ */
+export function fitToTeam(d: Dims, teamSize: number): Dims {
+  if (d.persons <= teamSize) return { weeks: d.weeks, persons: d.persons, charge: d.charge };
+  return initialDims(d.charge, Math.max(1, teamSize));
+}

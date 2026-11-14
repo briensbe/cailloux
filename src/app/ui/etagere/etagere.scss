@@ -1,0 +1,285 @@
+// Largeur de la colonne d'en-têtes : à garder cohérente avec SHELF_CHROME_PX (view.service.ts).
+$head-w: 220px;
+
+:host {
+  display: block;
+}
+
+.shelf {
+  padding: 14px 16px 18px;
+  border-radius: 22px;
+  background: rgb(255 255 255 / 0.5);
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: $head-w minmax(0, 1fr);
+  column-gap: 14px;
+}
+
+.time {
+  min-width: 0;
+  overflow: hidden;
+  &.scroll {
+    overflow-x: auto;
+  }
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 3px;
+  strong {
+    font: 700 13.5px var(--font-display);
+    small {
+      margin-left: 4px;
+      color: var(--ink-soft);
+      font: 500 11px var(--font-mono);
+    }
+  }
+  > small {
+    color: var(--ink-soft);
+    font-size: 11px;
+  }
+}
+
+.figs {
+  color: var(--ink-soft);
+  font-size: 11.5px;
+  b {
+    color: var(--ink);
+  }
+}
+
+.ko {
+  color: #b3321f;
+  font-style: normal;
+  font-weight: 700;
+}
+
+// Bande des personnes libres
+.band {
+  margin-bottom: 14px;
+  padding: 10px 0 10px 10px;
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--water) 8%, transparent);
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  height: 54px;
+  border-bottom: 1.5px solid var(--ink);
+  span {
+    flex: none;
+    box-sizing: border-box;
+    border-right: 1px solid rgb(255 255 255 / 0.7);
+    background: var(--water);
+    opacity: 0.75;
+    &.zero {
+      height: 4px !important;
+      background: #c0392b;
+      opacity: 1;
+    }
+  }
+}
+
+// Règle du temps
+.ruler-row {
+  position: sticky;
+  z-index: 10;
+  top: var(--sticky-top, 0px);
+  padding-top: 4px;
+  background: #f3eee5;
+}
+
+.corner {
+  padding-bottom: 4px;
+}
+
+.ruler {
+  display: flex;
+  height: 34px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  li {
+    position: relative;
+    flex: none;
+    box-sizing: border-box;
+    border-bottom: 2px solid var(--line-strong);
+    &.month {
+      border-left: 1px solid var(--line-strong);
+    }
+    &.in {
+      border-bottom-color: var(--water);
+      background: color-mix(in oklab, var(--water) 8%, transparent);
+    }
+    &.now .n {
+      color: var(--accent);
+      font-weight: 800;
+    }
+  }
+  .m {
+    position: absolute;
+    top: 2px;
+    left: 3px;
+    white-space: nowrap;
+    font: 700 10px var(--font-body);
+    text-transform: capitalize;
+  }
+  .n {
+    position: absolute;
+    bottom: 3px;
+    left: 2px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    font: 500 8.5px var(--font-mono);
+  }
+}
+
+// En-têtes des équipes et vases miniatures, de même hauteur ligne à ligne
+.team,
+.lane {
+  box-sizing: border-box;
+  padding: 10px 0 6px;
+  border-top: 1px solid var(--line);
+}
+
+.gauge {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--chip);
+  span {
+    display: block;
+    height: 100%;
+    background: var(--water);
+  }
+  &.over span {
+    background: #c0392b;
+  }
+}
+
+.tags {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.pill {
+  padding: 1px 7px;
+  border-radius: 9px;
+  background: var(--chip);
+  font-size: 10.5px;
+  font-weight: 600;
+  &.warn {
+    background: #fbe3df;
+    color: #a5281b;
+  }
+}
+
+.empty {
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.track {
+  position: relative;
+}
+
+.period,
+.today {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.period {
+  background: color-mix(in oklab, var(--water) 9%, transparent);
+}
+
+.today {
+  width: 0;
+  border-left: 2px solid var(--accent);
+}
+
+.lane {
+  display: flex;
+  align-items: flex-end;
+}
+
+.mini {
+  position: relative;
+  width: 100%;
+}
+
+.glass {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border: 1.5px solid var(--ink);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  background-color: rgb(255 255 255 / 0.45);
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to top, var(--grid-line) 1px, transparent 1px);
+}
+
+.over-zone {
+  position: absolute;
+  right: 0;
+  left: 0;
+  border-bottom: 1.5px dashed #c0392b;
+  background: repeating-linear-gradient(-45deg, rgb(200 60 40 / 0.08) 0 4px, transparent 4px 8px);
+}
+
+.b {
+  position: absolute;
+  z-index: 2;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 0 4px;
+  border: 1px solid rgb(255 255 255 / 0.55);
+  border-radius: 3px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  // Tient dans une ligne d'une personne (16 px, moins les bordures).
+  font: 600 10px/13px var(--font-body);
+  &.cut-s {
+    border-left: 2px dashed rgb(255 255 255 / 0.9);
+    border-radius: 0 3px 3px 0;
+  }
+  &.cut-e {
+    border-right: 2px dashed rgb(255 255 255 / 0.9);
+    border-radius: 3px 0 0 3px;
+  }
+  &.over {
+    outline: 2px solid #c0392b;
+    outline-offset: -1px;
+  }
+}
+
+.chip {
+  position: absolute;
+  z-index: 4;
+  bottom: 2px;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background: var(--ink);
+  color: #fff;
+  font: 700 9px var(--font-mono);
+  &.before {
+    left: 2px;
+  }
+  &.after {
+    right: 2px;
+  }
+}

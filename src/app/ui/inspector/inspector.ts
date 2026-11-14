@@ -1,7 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { footprint, weeksFor, withCharge, withPersons, withWeeks } from '../../domain/capacity';
-import { LoadMode, StoneColor, STONE_COLORS, STONES, stoneKind } from '../../domain/model';
+import { LoadMode, MAX_TEAM_SIZE, StoneColor, STONE_COLORS, STONES, stoneKind } from '../../domain/model';
 import { addDays, formatShort, isoWeek, parseIsoDate } from '../../domain/weeks';
 import { PlanningStore } from '../../state/planning.store';
 import { Icon } from '../icon';
@@ -25,6 +25,8 @@ export class Inspector {
     const p = this.project();
     return p ? (this.store.team(p.teamId) ?? null) : null;
   });
+  /** Borne des personnes : l'effectif de l'équipe, ou l'effectif maximal pour un projet du bac commun. */
+  protected readonly maxPersons = computed(() => this.team()?.size ?? MAX_TEAM_SIZE);
   protected readonly kind = computed(() => stoneKind(this.project()?.charge ?? 0));
   protected readonly air = computed(() => {
     const p = this.project();
@@ -34,9 +36,8 @@ export class Inspector {
   /** En charge fixe, la durée est bornée par « toute l'équipe » et « une seule personne ». */
   protected readonly weeksRange = computed(() => {
     const p = this.project()!;
-    const t = this.team()!;
     if (p.mode === 'free') return { min: 1, max: this.store.window().weeks };
-    return { min: weeksFor(p.charge, t.size), max: weeksFor(p.charge, 1) };
+    return { min: weeksFor(p.charge, this.maxPersons()), max: weeksFor(p.charge, 1) };
   });
 
   protected readonly period = computed(() => {
@@ -69,12 +70,12 @@ export class Inspector {
 
   protected setPersons(persons: number): void {
     const p = this.project()!;
-    this.store.reshapeProject(p.id, withPersons(p, persons, this.team()!.size));
+    this.store.reshapeProject(p.id, withPersons(p, persons, this.maxPersons()));
   }
 
   protected setWeeks(weeks: number): void {
     const p = this.project()!;
-    this.store.reshapeProject(p.id, withWeeks(p, weeks, this.team()!.size));
+    this.store.reshapeProject(p.id, withWeeks(p, weeks, this.maxPersons()));
   }
 
   protected setMode(mode: LoadMode): void {
@@ -86,6 +87,7 @@ export class Inspector {
   }
 
   protected moveTo(event: Event): void {
-    this.store.moveToTeam(this.project()!.id, (event.target as HTMLSelectElement).value);
+    // L'option vide est « Aucune (bac commun) ».
+    this.store.moveToTeam(this.project()!.id, (event.target as HTMLSelectElement).value || null);
   }
 }

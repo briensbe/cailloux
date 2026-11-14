@@ -118,3 +118,19 @@ export function periodOccupancy(teamSize: number, projects: readonly Project[], 
   const rects = projects.map((p) => toWindowRect(p, period.start)).filter((r): r is Rect => r !== null);
   return new Occupancy({ weeks: period.weeks, persons: teamSize }, rects);
 }
+
+/** La charge du bac commun face à la capacité restante de toutes les équipes. */
+export interface CommonWaiting {
+  /** Charge des projets sans équipe (j/h). */
+  charge: number;
+  /** Somme des capacités restantes des équipes sur la période (négative = surcharge). */
+  remaining: number;
+  /** Le bac commun tiendrait-il dans ce reste ? Estimation optimiste : ni la forme des projets ni le découpage de l'espace libre ne comptent. */
+  fits: boolean;
+}
+
+export function commonWaiting(projects: readonly Project[], teams: readonly PeriodFigures[]): CommonWaiting {
+  const charge = projects.filter((p) => p.teamId === null).reduce((s, p) => s + p.charge, 0);
+  const remaining = sumFigures(teams).remaining;
+  return { charge, remaining, fits: charge <= remaining };
+}

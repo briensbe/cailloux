@@ -19,7 +19,7 @@ import { ToastService } from '../state/toast.service';
       position: fixed;
       z-index: 1100;
       left: 50%;
-      bottom: 24px;
+      bottom: calc(var(--dock-h, 0px) + 24px);
       display: flex;
       flex-direction: column;
       align-items: center;

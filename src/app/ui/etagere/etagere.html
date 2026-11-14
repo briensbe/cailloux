@@ -1,0 +1,149 @@
+@let pc = periodCols();
+@let t = totals();
+<section class="shelf" aria-label="Étagère : toutes les équipes, en lecture seule">
+  <!-- Bande des personnes libres, toutes équipes : au-dessus de la règle, pour laisser les vases collés à elle. -->
+  <div class="row band">
+    <div class="head">
+      <strong>Toute l'étagère</strong>
+      <span class="figs">
+        <b>{{ t.fill * 100 | number: '1.0-0' }}&nbsp;%</b> ·
+        @if (t.remaining >= 0) {
+          reste {{ t.remaining | number: '1.0-0' }}&nbsp;j/h
+        } @else {
+          <em class="ko">surcharge {{ -t.remaining | number: '1.0-0' }}&nbsp;j/h</em>
+        }
+      </span>
+      <small>Personnes libres chaque semaine</small>
+    </div>
+    <div class="time" #bandTime>
+      <div class="bars" [style.width.px]="gridW()">
+        @for (f of free(); track $index) {
+          <span
+            [style.width.px]="cw()"
+            [style.height.%]="f.pct"
+            [class.zero]="f.n === 0"
+            [title]="f.n + (f.n > 1 ? ' personnes libres' : ' personne libre')"
+          ></span>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Règle du temps, collée en haut pendant le défilement -->
+  <div class="row ruler-row">
+    <div class="head corner">
+      <strong>Étagère</strong>
+      <small>{{ view.periodLabel() }}</small>
+    </div>
+    <div class="time" #rulerTime>
+      <ol class="ruler" [style.width.px]="gridW()" aria-hidden="true">
+        @for (w of labels(); track w.index) {
+          <li
+            [style.width.px]="cw()"
+            [class.month]="w.month"
+            [class.in]="inPeriod(w.index)"
+            [class.now]="w.index === store.todayCol()"
+          >
+            @if (w.month) {
+              <span class="m">{{ w.month }}</span>
+            }
+            @if (cw() >= 18 || w.index % 4 === 0) {
+              <span class="n">S{{ w.number }}</span>
+            }
+          </li>
+        }
+      </ol>
+    </div>
+  </div>
+
+  <!-- Les vases miniatures et leurs en-têtes, ligne à ligne de même hauteur -->
+  <div class="row lanes">
+    <div class="heads">
+      @for (l of lanes(); track l.team.id) {
+        @let f = l.figures;
+        <div class="head team" [style.height.px]="l.laneH">
+          <strong>{{ l.team.name }} <small>{{ l.team.size }}&nbsp;p</small></strong>
+          <div
+            class="gauge"
+            [class.over]="f.remaining < 0"
+            role="meter"
+            aria-label="Taux de remplissage"
+            [attr.aria-valuenow]="f.fill * 100 | number: '1.0-0'"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            <span [style.width.%]="(f.fill > 1 ? 1 : f.fill) * 100"></span>
+          </div>
+          <span class="figs">
+            <b>{{ f.fill * 100 | number: '1.0-0' }}&nbsp;%</b> ·
+            @if (f.remaining >= 0) {
+              reste {{ f.remaining | number: '1.0-0' }}&nbsp;j/h
+            } @else {
+              <em class="ko">surcharge {{ -f.remaining | number: '1.0-0' }}&nbsp;j/h</em>
+            }
+          </span>
+          <span class="tags">
+            @if (l.waitingCount) {
+              <span class="pill">{{ l.waitingCount }} en attente · {{ f.waiting | number: '1.0-0' }}&nbsp;j/h</span>
+            }
+            @if (l.overflow) {
+              <span class="pill warn">⚠ {{ l.overflow }} en débordement</span>
+            }
+          </span>
+        </div>
+      } @empty {
+        <p class="empty">Aucune équipe sur l'étagère.</p>
+      }
+    </div>
+
+    <div class="time scroll" (scroll)="syncScroll($event, bandTime, rulerTime)">
+      <div class="track" [style.width.px]="gridW()">
+        @if (pc) {
+          <div class="period" [style.left.px]="pc.from * cw()" [style.width.px]="(pc.to - pc.from) * cw()"></div>
+        }
+        @if (todayX(); as x) {
+          <div class="today" [style.left.px]="x"></div>
+        }
+        @for (l of lanes(); track l.team.id) {
+          <div class="lane" [style.height.px]="l.laneH">
+            <div class="mini" [style.height.px]="l.vaseH + l.overH">
+              <div
+                class="glass"
+                [style.height.px]="l.vaseH"
+                [style.background-size]="cw() + 'px ' + rowH + 'px'"
+              ></div>
+              @if (l.overH) {
+                <div class="over-zone" [style.bottom.px]="l.vaseH" [style.height.px]="l.overH"></div>
+              }
+              @for (b of l.bricks; track b.id) {
+                <div
+                  class="b"
+                  [class.over]="b.overflow"
+                  [class.cut-s]="b.cutStart"
+                  [class.cut-e]="b.cutEnd"
+                  [title]="b.title"
+                  [style.left.px]="b.left"
+                  [style.width.px]="b.width"
+                  [style.bottom.px]="b.bottom"
+                  [style.height.px]="b.height"
+                  [style.background]="b.base"
+                  [style.color]="b.ink"
+                >
+                  @if (b.labelled) {
+                    {{ b.name }}
+                  }
+                </div>
+              }
+              @if (l.before) {
+                <span class="chip before" [title]="l.before + ' avant la fenêtre'">‹ {{ l.before }}</span>
+              }
+              @if (l.after) {
+                <span class="chip after" [title]="l.after + ' après la fenêtre'">{{ l.after }} ›</span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</section>

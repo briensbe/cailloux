@@ -1,8 +1,8 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
-import { Dims, initialDims } from '../domain/capacity';
+import { Dims, fitToTeam, initialDims } from '../domain/capacity';
 import { demoState } from '../domain/demo';
 import { Bounds, canOccupy, Cell, compact, findFirstFit, findNearestFree, Occupancy, Rect, Size } from '../domain/geometry';
-import { newId, PlanningState, Project, StoneColor, STONE_COLORS, Team } from '../domain/model';
+import { MAX_TEAM_SIZE, newId, PlanningState, Project, StoneColor, STONE_COLORS, Team } from '../domain/model';
 import { effectiveWindowStart, extensionToFit, isOverflowing, outsideSide, toWindowRect } from '../domain/window';
 import { addWeeks, currentMonday, weeksBetween } from '../domain/weeks';
 import { ToastService } from './toast.service';
@@ -34,6 +34,8 @@ export class PlanningStore {
 
   readonly teams = computed(() => this.current().teams);
   readonly projects = computed(() => this.current().projects);
+  /** Les projets du bac commun : sans équipe, toujours sans dates (ADR 0003). */
+  readonly commonProjects = computed(() => this.projects().filter((p) => p.teamId === null));
   readonly window = computed(() => this.current().window);
   readonly canUndo = computed(() => this.past().length > 0);
   readonly canRedo = computed(() => this.future().length > 0);
@@ -75,10 +77,11 @@ export class PlanningStore {
     effect(() => saveState(this.current()));
   }
 
-  team(id: string): Team | undefined {
-    return this.teams().find((t) => t.id === id);
+  team(id: string | null): Team | undefined {
+    return id === null ? undefined : this.teams().find((t) => t.id === id);
   }
 
+  /** Les projets d'une équipe (posés ou dans son bac). Ne renvoie jamais le bac commun. */
   projectsOf(teamId: string): Project[] {
     return this.projects().filter((p) => p.teamId === teamId);
   }
@@ -162,6 +165,14 @@ export class PlanningStore {
       TEAM_NAMES.map((n) => `Équipe ${n}`).find((n) => !used.has(n)) ?? `Équipe ${this.teams().length + 1}`;
     const team: Team = { id: newId('team'), name, size: 4 };
     this.commit({ ...this.current(), teams: [...this.teams(), team] });
+    // Le nouveau vase s'ajoute en bas de la page, souvent hors de l'écran : on le dit, et on propose d'y aller.
+    this.toast.show(`${name} ajoutée (${team.size} personnes).`, {
+      label: 'Voir',
+      run: () =>
+        document
+          .querySelector(`app-reservoir[data-team-id="${team.id}"]`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+    });
   }
 
   renameTeam(id: string, name: string): void {
@@ -176,7 +187,7 @@ export class PlanningStore {
    */
   setTeamSize(id: string, size: number): void {
     const team = this.team(id);
-    const next = Math.max(1, Math.min(30, size));
+    const next = Math.max(1, Math.min(MAX_TEAM_SIZE, size));
     if (!team || next === team.size) return;
     this.commit(this.withTeam(id, (t) => ({ ...t, size: next })));
     const overflow = this.projectsOf(id).filter((p) => {
@@ -191,13 +202,20 @@ export class PlanningStore {
   removeTeam(id: string): void {
     const team = this.team(id);
     if (!team) return;
+    // Ses projets ne sont pas perdus : ils passent au bac commun, sans leurs dates (ADR 0003).
     const s = this.current();
+    const moved = this.projectsOf(id).length;
     this.commit({
       ...s,
       teams: s.teams.filter((t) => t.id !== id),
-      projects: s.projects.filter((p) => p.teamId !== id),
+      projects: s.projects.map((p) => (p.teamId === id ? { ...p, teamId: null, start: null, row: null } : p)),
     });
-    this.toast.show(`${team.name} a été retirée.`, { label: 'Annuler', run: () => this.undo() });
+    const message = !moved
+      ? `${team.name} a été retirée.`
+      : moved === 1
+        ? `${team.name} a été retirée : son projet est passé au bac commun.`
+        : `${team.name} a été retirée : ses ${moved} projets sont passés au bac commun.`;
+    this.toast.show(message, { label: 'Annuler', run: () => this.undo() });
   }
 
   // ---------------------------------------------------------------- Projets
@@ -205,8 +223,23 @@ export class PlanningStore {
   /**
    * Nouveau projet : première place libre à partir de la semaine en cours. Avec `extend`,
    * la fenêtre est allongée juste assez pour qu'il tienne ; sinon il attend dans le bac.
+   * Sans équipe (`teamId = null`), il va directement au bac commun, sans chercher de place.
    */
-  addProject(teamId: string, draft: ProjectDraft, extend = false): void {
+  addProject(teamId: string | null, draft: ProjectDraft, extend = false): void {
+    if (teamId === null) {
+      const project: Project = {
+        ...draft,
+        ...initialDims(draft.charge, Math.min(draft.persons, MAX_TEAM_SIZE)),
+        id: newId('p'),
+        teamId: null,
+        name: draft.name.trim() || 'Projet sans nom',
+        start: null,
+        row: null,
+      };
+      this.commit({ ...this.current(), projects: [...this.projects(), project] });
+      this.selectedId.set(project.id);
+      return;
+    }
     const team = this.team(teamId);
     if (!team) return;
     const dims = initialDims(draft.charge, Math.min(draft.persons, team.size));
@@ -244,14 +277,27 @@ export class PlanningStore {
     this.commit(this.withProject(id, (pr) => ({ ...pr, ...patch })));
   }
 
-  /** Déposer une brique à une case de la fenêtre déjà validée, ou dans le bac d'attente (`cell = null`). */
-  moveProject(id: string, teamId: string, cell: Cell | null): void {
+  /**
+   * Déposer une brique à une case de la fenêtre déjà validée (pour sa forme recalée), dans le bac
+   * de l'équipe (`cell = null`), ou dans le bac commun (`teamId = null`).
+   * En entrant dans une équipe, un projet trop haut est ramené à l'effectif (`fitToTeam`).
+   */
+  moveProject(id: string, teamId: string | null, cell: Cell | null): void {
     const p = this.project(id);
     if (!p) return;
+    if (teamId === null) {
+      if (p.teamId === null) return;
+      this.commit(this.withProject(id, (pr) => ({ ...pr, teamId: null, start: null, row: null })));
+      return;
+    }
+    const team = this.team(teamId);
+    if (!team) return;
+    const dims = fitToTeam(p, team.size);
     const start = cell ? this.startAt(cell.col) : null;
     const row = cell?.row ?? null;
-    if (p.teamId === teamId && p.start === start && p.row === row) return;
-    this.commit(this.withProject(id, (pr) => ({ ...pr, teamId, start, row })));
+    const reshaped = dims.weeks !== p.weeks || dims.persons !== p.persons;
+    if (!reshaped && p.teamId === teamId && p.start === start && p.row === row) return;
+    this.commit(this.withProject(id, (pr) => ({ ...pr, ...dims, teamId, start, row })));
   }
 
   /** Nouvelle forme validée par la poignée de redimensionnement (la place est garantie libre). */
@@ -270,7 +316,7 @@ export class PlanningStore {
     if (!p) return;
     let next: Project = { ...p, ...dims };
     const r = this.windowRect(next);
-    if (r && !this.canOccupy(p.teamId, p.id, r)) {
+    if (r && p.teamId !== null && !this.canOccupy(p.teamId, p.id, r)) {
       const cell = findNearestFree(r, dims, this.occupancy(p.teamId, p.id));
       next = { ...next, start: cell ? this.startAt(cell.col) : null, row: cell?.row ?? null };
       if (!cell) this.toast.show(`« ${p.name} » ne tient plus dans le vase : elle attend à côté.`);
@@ -278,23 +324,31 @@ export class PlanningStore {
     this.commit(this.withProject(id, () => next));
   }
 
-  /** Sortir une brique du bac et la poser à la première place libre. */
+  /** Sortir une brique du bac de son équipe et la poser à la première place libre. */
   placeProject(id: string): void {
     const p = this.project(id);
-    if (!p) return;
-    const cell = findFirstFit(p, this.occupancy(p.teamId, p.id), this.fromCol());
+    const team = this.team(p?.teamId ?? null);
+    if (!p || !team) return;
+    const cell = findFirstFit(fitToTeam(p, team.size), this.occupancy(team.id, p.id), this.fromCol());
     if (!cell) {
       this.toast.show(`Pas assez de place dans le vase pour « ${p.name} ».`);
       return;
     }
-    this.moveProject(id, p.teamId, cell);
+    this.moveProject(id, team.id, cell);
     this.markDropped(id);
   }
 
-  moveToTeam(id: string, teamId: string): void {
+  /** Changer d'équipe depuis l'inspecteur : recalé à l'effectif, posé à la première place libre ou dans le bac. */
+  moveToTeam(id: string, teamId: string | null): void {
     const p = this.project(id);
     if (!p || p.teamId === teamId) return;
-    const cell = findFirstFit(p, this.occupancy(teamId, p.id), this.fromCol());
+    if (teamId === null) {
+      this.moveProject(id, null, null);
+      return;
+    }
+    const team = this.team(teamId);
+    if (!team) return;
+    const cell = findFirstFit(fitToTeam(p, team.size), this.occupancy(teamId, p.id), this.fromCol());
     this.moveProject(id, teamId, cell);
     if (cell) this.markDropped(id);
     else this.toast.show(`« ${p.name} » ne tient pas dans ce vase : elle attend à côté.`);
@@ -304,7 +358,7 @@ export class PlanningStore {
   nudge(id: string, dCol: number, dRow: number): void {
     const p = this.project(id);
     const r = p && this.windowRect(p);
-    if (!p || !r) return;
+    if (!p || !r || p.teamId === null) return;
     const target = { ...r, col: r.col + dCol, row: r.row + dRow };
     if (this.canOccupy(p.teamId, p.id, target)) this.moveProject(id, p.teamId, target);
   }
@@ -346,8 +400,8 @@ export class PlanningStore {
     this.toast.show('Démo rechargée.', { label: 'Annuler', run: () => this.undo() });
   }
 
-  nextColor(teamId: string): StoneColor {
-    const used = this.projectsOf(teamId).length;
+  nextColor(teamId: string | null): StoneColor {
+    const used = teamId === null ? this.commonProjects().length : this.projectsOf(teamId).length;
     return STONE_COLORS[used % STONE_COLORS.length];
   }
 

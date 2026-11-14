@@ -7,12 +7,15 @@ import {
   DestroyRef,
   ElementRef,
   inject,
+  signal,
   viewChild,
 } from '@angular/core';
-import { customPeriod, PERIOD_PRESETS, periodEndExclusive, periodFigures, PeriodPreset, sumFigures } from './domain/period';
+import { commonWaiting, customPeriod, PERIOD_PRESETS, periodEndExclusive, periodFigures, PeriodPreset, sumFigures } from './domain/period';
 import { addDays, addWeeks, formatShort, parseIsoDate, toIsoDate } from './domain/weeks';
 import { PlanningStore } from './state/planning.store';
 import { CELL_H, ViewService, ZOOM_MAX, ZOOM_MIN } from './state/view.service';
+import { Dock } from './ui/dock/dock';
+import { Etagere } from './ui/etagere/etagere';
 import { DragOverlay } from './ui/drag-overlay';
 import { Icon } from './ui/icon';
 import { Inspector } from './ui/inspector/inspector';
@@ -23,7 +26,7 @@ import { Toasts } from './ui/toasts';
 
 @Component({
   selector: 'app-root',
-  imports: [Reservoir, Inspector, ProjectDialog, DragOverlay, Toasts, Icon, Stepper, DecimalPipe],
+  imports: [Reservoir, Etagere, Inspector, ProjectDialog, DragOverlay, Dock, Toasts, Icon, Stepper, DecimalPipe],
   templateUrl: './app.html',
   styleUrl: './app.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,6 +35,8 @@ import { Toasts } from './ui/toasts';
     '[style.--cell-w]': "view.cellW() + 'px'",
     '[style.--cell-h]': "cellH + 'px'",
     '[class.with-inspector]': 'store.selected() !== null',
+    // Sous la barre d'outils collante : là où la règle du temps de l'Étagère se colle à son tour.
+    '[style.--sticky-top]': "toolbarBottom() + 'px'",
     '(document:keydown)': 'onKey($event)',
   },
 })
@@ -44,15 +49,26 @@ export class App {
   protected readonly presets = PERIOD_PRESETS;
 
   private readonly board = viewChild.required<ElementRef<HTMLElement>>('board');
+  private readonly toolbar = viewChild.required<ElementRef<HTMLElement>>('toolbar');
+  /** Bas de la barre d'outils collante, en pixels depuis le haut de l'écran. */
+  protected readonly toolbarBottom = signal(0);
 
-  /** Indicateurs de la période, toutes équipes confondues. */
+  /**
+   * Indicateurs de la période, toutes équipes confondues. La charge en attente réunit
+   * les bacs d'équipe et le bac commun ; `unassigned` est la part du bac commun.
+   */
   protected readonly totals = computed(() => {
     const teams = this.store.teams();
     const period = this.view.period();
+    const figures = teams.map((t) => periodFigures(t.size, this.store.projectsOf(t.id), period));
+    const sum = sumFigures(figures);
+    const unassigned = commonWaiting(this.store.projects(), figures).charge;
     return {
+      ...sum,
       teams: teams.length,
-      persons: teams.reduce((sum, t) => sum + t.size, 0),
-      ...sumFigures(teams.map((t) => periodFigures(t.size, this.store.projectsOf(t.id), period))),
+      persons: teams.reduce((n, t) => n + t.size, 0),
+      waiting: sum.waiting + unassigned,
+      unassigned,
     };
   });
 
@@ -74,8 +90,14 @@ export class App {
     const destroyRef = inject(DestroyRef);
     afterNextRender(() => {
       const el = this.board().nativeElement;
-      const observer = new ResizeObserver(() => this.view.boardWidth.set(el.clientWidth));
+      const bar = this.toolbar().nativeElement;
+      const observer = new ResizeObserver(() => {
+        this.view.boardWidth.set(el.clientWidth);
+        // 10 px : le `top` de la barre collante (app.scss).
+        this.toolbarBottom.set(10 + bar.offsetHeight);
+      });
       observer.observe(el);
+      observer.observe(bar);
       destroyRef.onDestroy(() => observer.disconnect());
     });
   }
@@ -109,6 +131,8 @@ export class App {
     const target = e.target as HTMLElement;
     if (target.closest('input, textarea, select, dialog')) return;
     const key = e.key.toLowerCase();
+    // L'Étagère est en lecture seule : une annulation y ferait bouger des briques.
+    if (this.view.mode() === 'etagere') return;
     if ((e.ctrlKey || e.metaKey) && (key === 'z' || key === 'y')) {
       e.preventDefault();
       if (key === 'y' || e.shiftKey) this.store.redo();

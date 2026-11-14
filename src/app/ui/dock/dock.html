@@ -1,0 +1,75 @@
+@let w = waiting();
+<aside
+  class="dock"
+  [class.open]="view.dockOpen()"
+  [class.active]="active()"
+  [class.read-only]="readOnly()"
+  [attr.data-drop-kind]="readOnly() ? null : 'common'"
+  aria-label="Bac commun"
+>
+  <header>
+    <button
+      type="button"
+      class="btn btn-icon toggle"
+      (click)="view.dockOpen.set(!view.dockOpen())"
+      [attr.aria-expanded]="view.dockOpen()"
+      [attr.aria-label]="view.dockOpen() ? 'Replier le bac commun' : 'Déplier le bac commun'"
+      [title]="view.dockOpen() ? 'Replier' : 'Déplier'"
+    >
+      <span class="chevron" [class.up]="!view.dockOpen()">▾</span>
+    </button>
+    <strong class="title">Bac commun</strong>
+    <span class="count">
+      {{ projects().length }} {{ projects().length > 1 ? 'projets' : 'projet' }} ·
+      <span class="mono">{{ w.charge | number: '1.0-1' }}&nbsp;j/h</span>
+    </span>
+    @if (w.charge > 0) {
+      <span class="fits" [class.ko]="!w.fits">{{ w.fits ? 'tiendrait' : 'ne tiendrait pas' }}</span>
+      <small class="against">
+        face aux {{ w.remaining | number: '1.0-0' }}&nbsp;j/h restants de toutes les équipes
+        ({{ view.periodLabel().toLowerCase() }})
+      </small>
+    }
+    <span class="spacer"></span>
+    @if (readOnly()) {
+      <span class="ro">Lecture seule</span>
+    }
+    <button
+      type="button"
+      class="btn btn-primary"
+      [disabled]="readOnly()"
+      (click)="view.newProjectFor.set({ teamId: null })"
+      title="Nouveau projet, qu'aucune équipe n'a encore pris"
+    >
+      <app-icon name="plus" /> Caillou
+    </button>
+  </header>
+
+  @if (view.dockOpen()) {
+    <div class="items">
+      @for (p of projects(); track p.id) {
+        @let m = miniSize(p);
+        <app-brick
+          class="mini"
+          [tabindex]="readOnly() ? -1 : 0"
+          [project]="p"
+          [dims]="p"
+          [selected]="store.selectedId() === p.id"
+          [style.width.px]="m.w"
+          [style.height.px]="m.h"
+          [class.is-dragging]="draggingId() === p.id"
+          (pointerdown)="press($event, p)"
+          (keydown.enter)="select(p)"
+        />
+      } @empty {
+        <span class="hint">
+          @if (readOnly()) {
+            Aucun projet en attente d'arbitrage.
+          } @else {
+            Glissez une brique ici pour la remettre en commun, ou créez un caillou qu'aucune équipe n'a encore pris.
+          }
+        </span>
+      }
+    </div>
+  }
+</aside>

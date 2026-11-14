@@ -279,3 +279,9 @@ h1 {
   font-size: 12.5px;
   white-space: nowrap;
 }
+
+.read-only {
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-style: italic;
+}

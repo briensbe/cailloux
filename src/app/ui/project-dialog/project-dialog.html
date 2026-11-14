@@ -1,4 +1,4 @@
-@if (team(); as t) {
+@if (target(); as t) {
   <dialog #dialog class="dialog" (close)="onClosed()" [style.--stone]="stones[color()].base">
     <form (ngSubmit)="create()">
       <header>
@@ -19,12 +19,22 @@
           <div class="field">
             <label class="label" for="charge">Charge estimée</label>
             <span class="charge">
-              <input id="charge" type="number" name="charge" min="0.5" step="0.5" required [(ngModel)]="charge" />
+              <input
+                id="charge"
+                type="number"
+                name="charge"
+                min="0.5"
+                step="0.5"
+                required
+                [(ngModel)]="charge"
+              />
               <em>jours-homme</em>
             </span>
             <span class="presets">
               @for (v of presets; track v) {
-                <button type="button" [attr.aria-pressed]="charge() === v" (click)="charge.set(v)">{{ v }}</button>
+                <button type="button" [attr.aria-pressed]="charge() === v" (click)="charge.set(v)">
+                  {{ v }}
+                </button>
               }
             </span>
           </div>
@@ -33,16 +43,33 @@
             <label class="label" for="persons">
               Personnes en parallèle <strong>{{ persons() }}</strong> / {{ t.size }}
             </label>
-            <input id="persons" type="range" name="persons" min="1" [max]="t.size" [(ngModel)]="persons" />
+            <input
+              id="persons"
+              type="range"
+              name="persons"
+              min="1"
+              [max]="t.size"
+              [(ngModel)]="persons"
+            />
           </div>
 
           <div class="field">
             <span class="label">Quand on l'étire…</span>
             <div class="segmented" role="radiogroup" aria-label="Mode de redimensionnement">
-              <button type="button" role="radio" [attr.aria-checked]="mode() === 'free'" (click)="mode.set('free')">
+              <button
+                type="button"
+                role="radio"
+                [attr.aria-checked]="mode() === 'free'"
+                (click)="mode.set('free')"
+              >
                 <app-icon name="move" /> Libre
               </button>
-              <button type="button" role="radio" [attr.aria-checked]="mode() === 'fixed'" (click)="mode.set('fixed')">
+              <button
+                type="button"
+                role="radio"
+                [attr.aria-checked]="mode() === 'fixed'"
+                (click)="mode.set('fixed')"
+              >
                 <app-icon name="lock" /> Charge fixe
               </button>
             </div>
@@ -73,31 +100,38 @@
         </div>
 
         <figure class="preview">
-          <div class="mini-vase" [style.width.px]="preview().w" [style.height.px]="preview().h">
-            @for (r of placed(); track $index) {
+          @if (t.team) {
+            <div class="mini-vase" [style.width.px]="preview().w" [style.height.px]="preview().h">
+              @for (r of placed(); track $index) {
+                <span
+                  class="taken"
+                  [style.left.%]="pct(r.col, windowWeeks())"
+                  [style.bottom.%]="pct(r.row, t.size)"
+                  [style.width.%]="pct(r.weeks, windowWeeks())"
+                  [style.height.%]="pct(r.persons, t.size)"
+                ></span>
+              }
               <span
-                class="taken"
-                [style.left.%]="pct(r.col, windowWeeks())"
-                [style.bottom.%]="pct(r.row, t.size)"
-                [style.width.%]="pct(r.weeks, windowWeeks())"
-                [style.height.%]="pct(r.persons, t.size)"
+                class="new"
+                [class.overflow]="!landing()"
+                [style.left.%]="pct(landing()?.col ?? 0, windowWeeks())"
+                [style.bottom.%]="landing() ? pct(landing()!.row, t.size) : 104"
+                [style.width.%]="pct(dims().weeks, windowWeeks())"
+                [style.height.%]="pct(dims().persons, t.size)"
               ></span>
-            }
-            <span
-              class="new"
-              [class.overflow]="!landing()"
-              [style.left.%]="pct(landing()?.col ?? 0, windowWeeks())"
-              [style.bottom.%]="landing() ? pct(landing()!.row, t.size) : 104"
-              [style.width.%]="pct(dims().weeks, windowWeeks())"
-              [style.height.%]="pct(dims().persons, t.size)"
-            ></span>
-          </div>
+            </div>
+          }
           <figcaption>
             <span class="kind">{{ kind() }}</span>
             <span class="shape">
-              <strong>{{ dims().persons }}</strong> pers. pendant <strong>{{ dims().weeks }}</strong> sem.
+              <strong>{{ dims().persons }}</strong> pers. pendant
+              <strong>{{ dims().weeks }}</strong> sem.
             </span>
-            @if (landing(); as l) {
+            @if (!t.team) {
+              <span class="fit ok"
+                >Ira dans le bac commun, sans dates&nbsp;: aucune équipe ne l'a encore pris.</span
+              >
+            } @else if (landing(); as l) {
               <span class="fit ok">Tient dans le vase dès {{ l.label }}</span>
             } @else {
               <span class="fit ko">Le vase déborde&nbsp;: elle attendra à côté.</span>
@@ -113,7 +147,9 @@
 
       <footer>
         <button type="button" class="btn" (click)="close()">Annuler</button>
-        <button type="submit" class="btn btn-primary"><app-icon name="in" /> Déposer dans le vase</button>
+        <button type="submit" class="btn btn-primary">
+          <app-icon name="in" /> {{ t.team ? 'Déposer dans le vase' : 'Ranger dans le bac commun' }}
+        </button>
       </footer>
     </form>
   </dialog>

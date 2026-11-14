@@ -11,13 +11,13 @@
     <app-stepper
       icon="users"
       [value]="team().size"
-      [max]="30"
+      [max]="maxTeamSize"
       [unit]="team().size > 1 ? 'personnes' : 'personne'"
       (changed)="store.setTeamSize(team().id, $event)"
     />
   </div>
   <div class="actions">
-    <button type="button" class="btn btn-primary" (click)="view.newProjectFor.set(team().id)">
+    <button type="button" class="btn btn-primary" (click)="view.newProjectFor.set({ teamId: team().id })">
       <app-icon name="plus" /> Caillou
     </button>
     <button type="button" class="btn" (click)="store.compactTeam(team().id)" title="Tout faire glisser vers la semaine en cours et vers le fond">

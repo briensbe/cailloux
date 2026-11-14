@@ -1,4 +1,4 @@
-import { effectiveWindowStart, extensionToFit, isOverflowing, outsideSide, toWindowRect } from './window';
+import { effectiveWindowStart, extensionToFit, freePersonsPerWeek, isOverflowing, outsideSide, toWindowRect } from './window';
 
 describe('window', () => {
   const today = new Date(2026, 10, 11); // mercredi 11 novembre 2026
@@ -54,6 +54,46 @@ describe('window', () => {
 
     it('refuse un projet plus haut que l’effectif', () => {
       expect(extensionToFit({ weeks: 1, persons: 3 }, [], bounds, 0)).toBeNull();
+    });
+  });
+
+  describe('personnes libres, toutes équipes', () => {
+    const start = '2026-11-09';
+    const teams = [
+      { id: 'g', name: 'Galets', size: 3 },
+      { id: 's', name: 'Silex', size: 2 },
+    ];
+    const p = (teamId: string | null, weekOffset: string | null, row: number | null, persons: number, weeks = 1) => ({
+      id: `${teamId}-${weekOffset}-${row}`,
+      teamId,
+      name: 'x',
+      charge: persons * weeks * 5,
+      weeks,
+      persons,
+      mode: 'free' as const,
+      color: 'jade' as const,
+      start: weekOffset,
+      row,
+    });
+
+    it('« Somme des vases » : 1 + 2 personnes libres', () => {
+      const projects = [p('g', '2026-11-09', 0, 2)];
+      expect(freePersonsPerWeek(teams, projects, start, 2)).toEqual([3, 5]);
+    });
+
+    it('« Semaine saturée » : 0 quand tous les vases sont pleins', () => {
+      const projects = [p('g', '2026-11-09', 0, 3), p('s', '2026-11-09', 0, 2)];
+      expect(freePersonsPerWeek(teams, projects, start, 1)).toEqual([0]);
+    });
+
+    it("une brique en débordement ne rend pas le décompte négatif", () => {
+      const projects = [p('s', '2026-11-09', 0, 2), p('s', '2026-11-09', 2, 1)];
+      expect(freePersonsPerWeek([teams[1]], projects, start, 1)).toEqual([0]);
+    });
+
+    it('ignore le bac commun et les bacs d’équipe', () => {
+      const projects = [p(null, null, null, 2), p('g', null, null, 1)];
+      expect(freePersonsPerWeek(teams, projects, start, 1)).toEqual([5]);
     });
   });
 });

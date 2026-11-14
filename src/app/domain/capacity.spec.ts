@@ -1,4 +1,4 @@
-import { footprint, fillRatio, freeResize, personsFor, weeksFor, withCharge, withPersons, withWeeks } from './capacity';
+import { fitToTeam, footprint, fillRatio, freeResize, personsFor, weeksFor, withCharge, withPersons, withWeeks } from './capacity';
 
 describe('capacity', () => {
   it('convertit une charge en durée et en personnes', () => {
@@ -55,6 +55,20 @@ describe('capacity', () => {
       weeks: 6,
       persons: 2,
       charge: 60,
+    });
+  });
+
+  describe("entrée dans un vase (fitToTeam)", () => {
+    it("ramène un projet trop haut à l'effectif en gardant sa charge", () => {
+      expect(fitToTeam({ weeks: 4, persons: 6, charge: 120 }, 4)).toEqual({ weeks: 6, persons: 4, charge: 120 });
+    });
+
+    it("garde la charge d'un projet en mode libre", () => {
+      expect(fitToTeam({ weeks: 3, persons: 4, charge: 60 }, 2)).toEqual({ weeks: 6, persons: 2, charge: 60 });
+    });
+
+    it("ne touche pas à un projet qui tient déjà", () => {
+      expect(fitToTeam({ weeks: 3, persons: 2, charge: 23 }, 5)).toEqual({ weeks: 3, persons: 2, charge: 23 });
     });
   });
 });

@@ -1,10 +1,18 @@
 import { afterNextRender, inject, Injectable, Injector, signal } from '@angular/core';
+import { Dims, fitToTeam } from '../domain/capacity';
 import { Cell, findNearestFree } from '../domain/geometry';
 import { Project } from '../domain/model';
 import { PlanningStore } from './planning.store';
 import { CELL_H, ViewService } from './view.service';
 
-export type DropTarget = { kind: 'grid'; teamId: string; cell: Cell } | { kind: 'tray'; teamId: string };
+/**
+ * Où la brique atterrira : une case d'un vase (avec la forme qu'elle y prendra, recalée à l'effectif
+ * si elle est trop haute), le bac d'une équipe, ou le bac commun (le dock).
+ */
+export type DropTarget =
+  | { kind: 'grid'; teamId: string; cell: Cell; dims: Dims }
+  | { kind: 'tray'; teamId: string }
+  | { kind: 'common' };
 
 export interface DragState {
   project: Project;
@@ -96,15 +104,22 @@ export class DragService {
 
   /** Traduit la position du curseur en case du vase survolé, puis applique l'aimant. */
   private targetAt(pointer: { x: number; y: number }, d: DragState): DropTarget | null {
-    const zone = document.elementFromPoint(pointer.x, pointer.y)?.closest<HTMLElement>('[data-drop-team]');
-    const teamId = zone?.dataset['dropTeam'];
-    if (!zone || !teamId) return null;
+    const zone = document
+      .elementFromPoint(pointer.x, pointer.y)
+      ?.closest<HTMLElement>('[data-drop-team], [data-drop-kind="common"]');
+    if (!zone) return null;
+    if (zone.dataset['dropKind'] === 'common') return d.project.teamId === null ? null : { kind: 'common' };
+    const teamId = zone.dataset['dropTeam'];
+    const team = this.store.team(teamId ?? null);
+    if (!teamId || !team) return null;
     if (zone.dataset['dropKind'] === 'tray') return { kind: 'tray', teamId };
 
     const grid = zone.querySelector<HTMLElement>('[data-grid]');
     if (!grid) return null;
     const box = grid.getBoundingClientRect();
     const { project: p, grab } = d;
+    // Dans un vase trop étroit, la brique y entre ramenée à l'effectif : on cherche une place pour cette forme-là.
+    const dims = fitToTeam(p, team.size);
     const left = pointer.x - grab.x;
     const bottom = pointer.y - grab.y + p.persons * CELL_H;
     // Les lignes se comptent depuis le fond du vase : on part du bas de la grille.
@@ -114,10 +129,12 @@ export class DragService {
     };
     // Un projet déjà commencé peut garder une partie avant le bord gauche : si la place visée
     // est libre, on la prend telle quelle (l'aimant, lui, ne propose que des places visibles).
-    const exact = { ...desired, weeks: p.weeks, persons: p.persons };
-    if (desired.col < 0 && this.store.canOccupy(teamId, p.id, exact)) return { kind: 'grid', teamId, cell: desired };
-    const cell = findNearestFree(desired, p, this.store.occupancy(teamId, p.id));
-    return cell ? { kind: 'grid', teamId, cell } : null;
+    const exact = { ...desired, weeks: dims.weeks, persons: dims.persons };
+    if (desired.col < 0 && this.store.canOccupy(teamId, p.id, exact)) {
+      return { kind: 'grid', teamId, cell: desired, dims };
+    }
+    const cell = findNearestFree(desired, dims, this.store.occupancy(teamId, p.id));
+    return cell ? { kind: 'grid', teamId, cell, dims } : null;
   }
 
   private drop(): void {
@@ -127,6 +144,10 @@ export class DragService {
     const { project: p, target } = d;
     if (target.kind === 'tray') {
       this.store.moveProject(p.id, target.teamId, null);
+      return;
+    }
+    if (target.kind === 'common') {
+      this.store.moveProject(p.id, null, null);
       return;
     }
     const from = { x: d.pointer.x - d.grab.x, y: d.pointer.y - d.grab.y };
@@ -159,8 +180,11 @@ export class DragService {
     setTimeout(() => this.landing.update((v) => (v === id ? null : v)), LANDING_MS + 50);
   }
 
+  /** Le bas de l'écran est occupé par le dock du bac commun : on fait défiler juste au-dessus. */
   private autoScroll(y: number): void {
+    const dock = document.querySelector<HTMLElement>('[data-drop-kind="common"]');
+    const bottom = dock ? dock.getBoundingClientRect().top : window.innerHeight;
     if (y < AUTOSCROLL_EDGE_PX) window.scrollBy(0, -14);
-    else if (y > window.innerHeight - AUTOSCROLL_EDGE_PX) window.scrollBy(0, 14);
+    else if (y > bottom - AUTOSCROLL_EDGE_PX && y < bottom) window.scrollBy(0, 14);
   }
 }

@@ -38,6 +38,9 @@ export const STONES: Record<StoneColor, { label: string; base: string; ink: stri
   sandstone: { label: 'Grès', base: '#c9ae84', ink: '#2c2210' },
 };
 
+/** Effectif maximal d'une équipe ; borne aussi les personnes d'un projet sans équipe. */
+export const MAX_TEAM_SIZE = 30;
+
 export interface Team {
   id: string;
   name: string;
@@ -47,7 +50,11 @@ export interface Team {
 
 export interface Project {
   id: string;
-  teamId: string;
+  /**
+   * Équipe du projet, ou `null` pour un projet du bac commun, qu'aucune équipe n'a encore pris
+   * (ADR 0003). Un projet sans équipe a toujours `start = row = null`.
+   */
+  teamId: string | null;
   name: string;
   /** Charge en jours-homme (j/h). */
   charge: number;

@@ -2,7 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { Dims, freeResize, withPersons, withWeeks } from '../../domain/capacity';
 import { largestFreeRect, Occupancy, Rect } from '../../domain/geometry';
-import { Project, STONES, Team } from '../../domain/model';
+import { MAX_TEAM_SIZE, Project, STONES, Team } from '../../domain/model';
 import { periodFigures, periodOccupancy } from '../../domain/period';
 import { isOverflowing, outsideSide } from '../../domain/window';
 import { addWeeks, weekLabels, weeksBetween } from '../../domain/weeks';
@@ -38,10 +38,16 @@ export class Reservoir {
   protected readonly view = inject(ViewService);
   protected readonly dnd = inject(DragService);
   protected readonly cellH = CELL_H;
+  protected readonly maxTeamSize = MAX_TEAM_SIZE;
 
   protected readonly windowWeeks = computed(() => this.store.window().weeks);
   protected readonly projects = computed(() => this.store.projectsOf(this.team().id));
-  protected readonly waiting = computed(() => this.projects().filter((p) => p.start === null));
+  /** Le bac de l'équipe, des plus gros projets aux plus petits : les gros cailloux d'abord. */
+  protected readonly waiting = computed(() =>
+    this.projects()
+      .filter((p) => p.start === null)
+      .sort((a, b) => b.charge - a.charge),
+  );
   private readonly placed = computed(() =>
     this.projects()
       .map((p) => ({ p, r: this.store.windowRect(p) }))
@@ -119,7 +125,8 @@ export class Reservoir {
     const d = this.dnd.drag();
     const t = d?.target;
     if (!d || t?.kind !== 'grid' || t.teamId !== this.team().id) return null;
-    return { ...t.cell, weeks: d.project.weeks, persons: d.project.persons, stone: STONES[d.project.color].base };
+    // La forme recalée : un projet trop haut pour ce vase y entre ramené à l'effectif.
+    return { ...t.cell, weeks: t.dims.weeks, persons: t.dims.persons, stone: STONES[d.project.color].base };
   });
   protected readonly trayActive = computed(() => {
     const t = this.dnd.drag()?.target;

@@ -56,6 +56,9 @@
     {{ view.periodLabel() }}
     @if (t.waiting > 0) {
       · {{ t.waiting | number: '1.0-1' }}&nbsp;j/h en attente
+      @if (t.unassigned > 0) {
+        (dont {{ t.unassigned | number: '1.0-1' }}&nbsp;non attribués)
+      }
     }
     @if (store.outsideCount(); as n) {
       <span class="warn">⚠ {{ n }} {{ n > 1 ? 'projets' : 'projet' }} hors fenêtre</span>
@@ -66,7 +69,18 @@
   </p>
 </header>
 
-<nav class="toolbar" aria-label="Outils">
+<nav class="toolbar" aria-label="Outils" #toolbar>
+  <div class="tool">
+  <div class="segmented mode" role="radiogroup" aria-label="Affichage">
+    <button type="button" role="radio" [attr.aria-checked]="view.mode() === 'vases'" (click)="view.setMode('vases')">
+      Vases
+    </button>
+    <button type="button" role="radio" [attr.aria-checked]="view.mode() === 'etagere'" (click)="view.setMode('etagere')" title="Toutes les équipes d'un coup d'œil, en lecture seule">
+      Étagère
+    </button>
+  </div>
+  </div>
+
   <div class="tool" role="group" aria-label="Fenêtre">
     <span>Fenêtre</span>
     <button type="button" class="btn btn-icon" (click)="store.shiftWindow(-1)" title="Une semaine plus tôt" aria-label="Une semaine plus tôt">‹</button>
@@ -102,11 +116,13 @@
 
   <div class="tool">
     <span>Zoom</span>
-    <input type="range" aria-label="Zoom" [min]="zoomMin" [max]="zoomMax" [value]="view.cellW()" (input)="setZoom($event)" />
-    <button type="button" class="btn" [class.btn-primary]="view.fit()" [attr.aria-pressed]="view.fit()" (click)="view.fit.set(!view.fit())">
+    <input type="range" aria-label="Zoom" [min]="zoomMin" [max]="zoomMax" [value]="view.activeCellW()" (input)="setZoom($event)" />
+    <button type="button" class="btn" [class.btn-primary]="view.activeFit()" [attr.aria-pressed]="view.activeFit()" (click)="view.toggleFit()">
       Tout voir
     </button>
   </div>
+  <!-- L'Étagère est en lecture seule : ni annulation, ni ajout d'équipe, ni démo rechargée. -->
+  @if (view.mode() === 'vases') {
   <div class="history">
     <button type="button" class="btn btn-icon" (click)="store.undo()" [disabled]="!store.canUndo()" title="Annuler (Ctrl+Z)" aria-label="Annuler">
       <app-icon name="undo" />
@@ -118,19 +134,28 @@
   <span class="spacer"></span>
   <button type="button" class="btn btn-ghost" (click)="store.resetDemo()">Recharger la démo</button>
   <button type="button" class="btn btn-primary" (click)="store.addTeam()"><app-icon name="plus" /> Nouvelle équipe</button>
+  } @else {
+  <span class="spacer"></span>
+  <span class="read-only">Lecture seule&nbsp;: passez en mode Vases pour modifier.</span>
+  }
 </nav>
 
 <main class="board" #board>
-  @for (team of store.teams(); track team.id; let i = $index) {
-    <app-reservoir [team]="team" [style.--i]="i" />
-  } @empty {
-    <div class="empty">
-      <p>Aucun vase pour l'instant.</p>
-      <button type="button" class="btn btn-primary" (click)="store.addTeam()"><app-icon name="plus" /> Créer une équipe</button>
-    </div>
+  @if (view.mode() === 'etagere') {
+    <app-etagere />
+  } @else {
+    @for (team of store.teams(); track team.id; let i = $index) {
+      <app-reservoir [team]="team" [attr.data-team-id]="team.id" [style.--i]="i" />
+    } @empty {
+      <div class="empty">
+        <p>Aucun vase pour l'instant.</p>
+        <button type="button" class="btn btn-primary" (click)="store.addTeam()"><app-icon name="plus" /> Créer une équipe</button>
+      </div>
+    }
   }
 </main>
 
+@if (view.mode() === 'vases') {
 <footer class="hints">
   <span><kbd>Glisser</kbd> déplacer une brique</span>
   <span><kbd>Poignées</kbd> l'étirer</span>
@@ -138,7 +163,9 @@
   <span><kbd>Suppr</kbd> la retirer</span>
   <span><kbd>Ctrl Z</kbd> annuler</span>
 </footer>
+}
 
+<app-dock />
 <app-inspector />
 <app-project-dialog />
 <app-drag-overlay />

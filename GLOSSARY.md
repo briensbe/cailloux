@@ -19,8 +19,20 @@ Le nombre de personnes d'une équipe, qui peut changer à une date donnée (arri
 _À éviter_ : taille d'équipe, ETP
 
 **Bac d'attente** :
-L'endroit, hors du vase, où l'on range les projets sans dates : ceux qu'on y a mis volontairement, ou qui n'ont jamais trouvé de place.
-_À éviter_ : backlog, corbeille
+L'endroit, hors des vases, où l'on range les projets sans dates. Il en existe deux sortes : le bac commun et le bac de chaque équipe. Ce n'est pas une liste priorisée.
+_À éviter_ : backlog, corbeille, hors-vase
+
+**Bac commun** :
+Le bac d'attente partagé par toutes les équipes : il contient les projets qu'aucune équipe n'a encore pris.
+_À éviter_ : pool, backlog global
+
+**Bac d'équipe** :
+Le bac d'attente d'un vase : il contient les projets attribués à cette équipe mais sans dates, qu'on y a mis volontairement ou qui n'ont pas trouvé de place.
+_À éviter_ : hors du vase
+
+**Étagère** :
+Tous les vases en miniature, alignés sur une même règle du temps, pour comparer les équipes d'un coup d'œil ; leur hauteur reste proportionnelle à l'effectif.
+_À éviter_ : vue d'ensemble, tableau de bord, portefeuille
 
 **Débordement** :
 L'état d'une brique qui occupe des personnes que l'effectif ne compte plus, après une baisse d'effectif : elle reste en place et est signalée.

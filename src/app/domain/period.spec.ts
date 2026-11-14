@@ -1,6 +1,6 @@
 import { largestFreeRect } from './geometry';
 import { Project } from './model';
-import { customPeriod, periodFigures, periodOccupancy, periodOverlap, presetPeriod, sumFigures } from './period';
+import { commonWaiting, customPeriod, periodFigures, periodOccupancy, periodOverlap, presetPeriod, sumFigures } from './period';
 
 const brick = (p: Partial<Project>): Project => ({
   id: 'x',
@@ -93,5 +93,24 @@ describe('period', () => {
     const occ = periodOccupancy(2, projects, { start: '2026-11-16', weeks: 4 });
     expect(occ.freeCells()).toBe(4);
     expect(largestFreeRect(occ)).toEqual({ weeks: 2, persons: 2 });
+  });
+
+  describe('bac commun', () => {
+    // Sur une semaine, une équipe vide de N personnes a N × 5 j/h de reste.
+    const figures = (remaining: number) => periodFigures(remaining / 5, [], { start: '2026-11-16', weeks: 1 });
+
+    it('« Bac commun face à toutes les équipes » : 337 j/h ne tiendraient pas dans 190 j/h', () => {
+      const projects = [
+        brick({ teamId: null, start: null, row: null, charge: 140 }),
+        brick({ teamId: null, start: null, row: null, charge: 197 }),
+        brick({ teamId: 't', start: null, row: null, charge: 40 }),
+      ];
+      expect(commonWaiting(projects, [figures(115), figures(75)])).toEqual({ charge: 337, remaining: 190, fits: false });
+    });
+
+    it('tiendrait quand la charge commune ne dépasse pas le reste', () => {
+      const projects = [brick({ teamId: null, start: null, row: null, charge: 190 })];
+      expect(commonWaiting(projects, [figures(115), figures(75)]).fits).toBe(true);
+    });
   });
 });
