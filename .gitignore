@@ -43,7 +43,6 @@ __screenshots__/
 Thumbs.db
 
 # OpenSpec (fichiers générés par `openspec init`, gardés hors des commits)
-/openspec/
 /.agents/
 /.gemini/
 /.claude/commands/opsx/
