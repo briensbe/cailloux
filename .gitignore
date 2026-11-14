@@ -41,3 +41,12 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# OpenSpec (fichiers générés par `openspec init`, gardés hors des commits)
+/openspec/
+/.agents/
+/.gemini/
+/.claude/commands/opsx/
+/.claude/skills/openspec-*/
+/.github/prompts/opsx-*.prompt.md
+/.github/skills/openspec-*/
