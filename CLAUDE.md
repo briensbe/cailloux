@@ -6,7 +6,7 @@ Le [README.md](README.md) décrit le produit, les commandes et le déploiement. 
 ## Commandes
 
 - `pnpm start` : serveur de dev sur le port 4200. La config de lancement de Claude ([.claude/launch.json](.claude/launch.json)) utilise le port **4300**.
-- `pnpm test` : Vitest via `ng test`. Seul `src/app/domain` est testé. `describe`/`it`/`expect` sont des globales, sans import.
+- `pnpm test` : Vitest via `ng test` (environnement jsdom). Seuls `src/app/domain` et `src/app/io` sont testés. `describe`/`it`/`expect` sont des globales, sans import.
 - `pnpm build` : sortie dans `dist/cailloux/browser`. Budgets de production : 500 kB initial (avertissement), **12 kB de style par composant** (avertissement) et 20 kB (erreur).
 - Utiliser pnpm, pas npm : la version est fixée par `packageManager`, et seul `pnpm-lock.yaml` est à jour.
 - Prettier : 100 colonnes, guillemets simples, parser `angular` pour les `.html`.
@@ -19,6 +19,10 @@ Le [README.md](README.md) décrit le produit, les commandes et le déploiement. 
   - `weeks.ts` : semaines ISO qui commencent le lundi, libellés en `fr-FR`. Les écarts entre dates (`weeksBetween`, `addWeeks`) se calculent en UTC pour ne pas être faussés par le changement d'heure.
   - `window.ts` : la fenêtre de semaines et le passage date ↔ colonne (`toWindowRect`), le repérage des briques hors fenêtre ou en débordement, l'agrandissement minimal pour faire tenir un projet.
   - `period.ts` : la période d'analyse et ses indicateurs (capacité, charge planifiée, air, taux de remplissage, capacité restante, charge en attente). Vocabulaire : [GLOSSARY.md](GLOSSARY.md).
+  - `names.ts` : identité des projets par leur nom (`nameKey`, `cleanName`) et clé des en-têtes de colonne (`headerKey`, qui ignore aussi les accents).
+  - `stones.ts` : `nearestStone(hex)`, la pierre la plus proche d'une couleur (distance OKLab).
+  - `import.ts` : l'aperçu d'un import (`reviewImport`), recalculé à chaque choix de l'utilisateur : états des lignes (nouveau, déjà présent, doublon, ignoré), coches, charges, pierres, métadonnées.
+- **`io/`** : lecture de fichiers avec les API du navigateur. `xlsx.ts` lit la première feuille d'un `.xlsx` (ZIP par `DecompressionStream`, XML par `DOMParser`), sans dépendance. Testé comme le domaine.
 - **`state/`** : services `providedIn: 'root'` construits sur des signals.
   - `PlanningStore` est la **seule source de vérité**. Toute écriture passe par `commit()`, qui empile l'état précédent pour Ctrl+Z (80 niveaux) ; un `effect` sauvegarde ensuite dans `localStorage` (`cailloux.state.v2`). La fenêtre (`window`) fait partie de cet état : elle s'annule avec Ctrl+Z.
   - `ViewService` contient l'état purement visuel (zoom, mode « tout voir », période sélectionnée, dialogue ouvert), retenu dans `cailloux.view.v1`. Il n'entre **pas** dans l'historique. `cellW` est calculé : zoom, ou largeur ajustée en « tout voir ».
@@ -39,6 +43,8 @@ Le [README.md](README.md) décrit le produit, les commandes et le déploiement. 
 - Pour construire un `Rect` candidat, recopier explicitement `weeks`/`persons` (voir `at()` dans `geometry.ts`). Écrire `{ col, row, ...project }` laisserait les `col`/`row` du projet écraser ceux du candidat.
 - Calculs sur les charges : passer par `weeksFor`/`personsFor`, qui retranchent un `EPSILON` avant `Math.ceil` pour corriger les erreurs d'arrondi des flottants.
 - Modes de redimensionnement : `free` (la charge suit la surface) et `fixed` (surface imposée). Toute nouvelle opération de forme doit passer par `withWeeks`, `withPersons`, `withCharge` ou `freeResize` et traiter les deux modes.
+- **Identité par le nom** : deux projets sont le même projet si leurs `nameKey` sont égales (casse et espaces ignorés, accents gardés). Tout rapprochement (import Excel, futurs imports JSON) passe par `nameKey`. L'unicité n'est contrôlée qu'à l'import, pas à la création ni au renommage.
+- **Métadonnées** (`Project.meta`) : colonnes d'origine d'un projet importé, sous leur en-tête tel qu'écrit dans le fichier. Facultatives, jamais modifiées ni interprétées par l'application (sauf la couleur d'origine, qui choisit la pierre à l'import).
 - Accès à `localStorage` : toujours dans un `try/catch`, car l'application doit fonctionner sans stockage. Si le format de `PlanningState` change, changer la clé de stockage (aujourd'hui `cailloux.state.v2`) ou ajouter une migration dans `loadState()`. Sinon les anciens états, validés seulement de façon superficielle, seront chargés tels quels.
 
 ## Conventions

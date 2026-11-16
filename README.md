@@ -18,6 +18,10 @@ les gros cailloux d'abord, puis les petits, le sable, l'eau.
 - **Deux sortes de bac d'attente** : sous chaque vase, le bac de l'équipe (projets promis à l'équipe, sans dates) ;
   en bas de l'écran, le **bac commun** (projets qu'aucune équipe n'a encore pris), dans un dock repliable d'où l'on
   glisse les briques vers les vases, et où l'on crée un caillou sans équipe. Supprimer une équipe y envoie ses projets.
+- **Import d'un export Excel** (`.xlsx`) dans le bac commun : bouton « Importer… » du dock, ou fichier déposé sur
+  le dock. Un aperçu permet de choisir les lignes, de filtrer par statut et de fixer les charges avant d'importer ;
+  un projet est reconnu par son nom (à la casse et aux espaces près), et les autres colonnes sont gardées comme
+  métadonnées, visibles dans l'inspecteur. Un seul Ctrl+Z annule tout l'import.
 - **Aucune saisie perdue** : réduire une équipe ou raccourcir la fenêtre ne déplace rien ; les briques concernées
   sont signalées (débordement, hors fenêtre).
 - **« Le vase est-il plein ? »** verse l'eau dans les interstices de la période et répond avec la capacité restante
@@ -38,7 +42,7 @@ Les décisions d'architecture sont consignées dans [docs/adr](docs/adr).
 ```bash
 pnpm install
 pnpm start          # serveur de dev sur http://localhost:4200
-pnpm test           # tests unitaires (Vitest) du cœur métier
+pnpm test           # tests unitaires (Vitest) du cœur métier et de la lecture des fichiers
 pnpm build          # build de production dans dist/cailloux/browser
 ```
 
@@ -49,9 +53,10 @@ Les données sont stockées uniquement dans le navigateur (`localStorage`) : pas
 
 | Dossier          | Rôle                                                                                     |
 | ---------------- | ---------------------------------------------------------------------------------------- |
-| `src/app/domain` | Métier pur, sans Angular : capacité, géométrie du vase, calendrier, données de démo.     |
+| `src/app/domain` | Métier pur, sans Angular : capacité, géométrie du vase, calendrier, import, démo.        |
+| `src/app/io`     | Lecture des fichiers `.xlsx` avec les API du navigateur, sans dépendance.                |
 | `src/app/state`  | Store à base de signals (historique Ctrl+Z, sauvegarde `localStorage`), drag & drop.     |
-| `src/app/ui`     | Composants : vase, brique, Étagère, dock du bac commun, inspecteur, « Nouveau caillou ». |
+| `src/app/ui`     | Composants : vase, brique, Étagère, dock, inspecteur, « Nouveau caillou », import.       |
 
 Raccourcis : flèches pour pousser la brique sélectionnée, `Suppr` pour la retirer, `Ctrl+Z` / `Ctrl+Y`.
 

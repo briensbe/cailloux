@@ -42,6 +42,16 @@ _À éviter_ : conflit, erreur
 L'état d'une brique dont tout ou partie des semaines tombe avant ou après la fenêtre affichée : elle garde ses dates et est signalée au bord du vase.
 _À éviter_ : masquée, perdue
 
+### Import
+
+**Import** :
+L'entrée dans le bac commun d'une liste de projets venue d'un fichier (un export Excel), après un aperçu. Un projet y est reconnu par son nom, à la casse et aux espaces près.
+_À éviter_ : synchronisation, chargement
+
+**Métadonnées** :
+Les colonnes d'origine d'un projet importé (code, statut, référence externe, chef de projet…), gardées telles quelles pour le rapprocher plus tard d'autres données ; l'application ne les interprète pas.
+_À éviter_ : attributs, propriétés
+
 ### Capacité
 
 **Capacité** :

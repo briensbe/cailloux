@@ -14,7 +14,8 @@ export type IconName =
   | 'drop'
   | 'shake'
   | 'out'
-  | 'in';
+  | 'in'
+  | 'file';
 
 /** Jeu d'icônes au trait, dessinées à la main en SVG (pas de dépendance externe). */
 @Component({
@@ -45,6 +46,9 @@ export type IconName =
         @case ('shake') { <path d="m11 17-5-5 5-5M18 17l-5-5 5-5" /> }
         @case ('out') { <path d="M12 3v12M7 10l5 5 5-5M5 21h14" /> }
         @case ('in') { <path d="M12 21V9M7 14l5-5 5 5M5 3h14" /> }
+        @case ('file') {
+          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M12 11v6M9 14l3 3 3-3" />
+        }
       }
     </svg>
   `,

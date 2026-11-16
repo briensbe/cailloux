@@ -66,6 +66,12 @@ export interface Project {
   start: string | null;
   /** Première ligne occupée en partant du fond du vase. `null` = dans le bac. */
   row: number | null;
+  /**
+   * Colonnes d'origine d'un projet importé, sous leur en-tête tel qu'écrit dans le fichier
+   * (« Code Projet », « Statut »…). Transportées sans être interprétées, jamais modifiées.
+   * Absent pour un projet créé à la main.
+   */
+  meta?: Record<string, string>;
 }
 
 export const DEFAULT_WINDOW_WEEKS = 52;

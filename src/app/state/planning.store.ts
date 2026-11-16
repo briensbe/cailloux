@@ -1,6 +1,7 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { Dims, fitToTeam, initialDims } from '../domain/capacity';
 import { demoState } from '../domain/demo';
+import { ImportDraft } from '../domain/import';
 import { Bounds, canOccupy, Cell, compact, findFirstFit, findNearestFree, Occupancy, Rect, Size } from '../domain/geometry';
 import { MAX_TEAM_SIZE, newId, PlanningState, Project, StoneColor, STONE_COLORS, Team } from '../domain/model';
 import { effectiveWindowStart, extensionToFit, isOverflowing, outsideSide, toWindowRect } from '../domain/window';
@@ -391,6 +392,34 @@ export class PlanningStore {
         const cell = cells.get(p.id);
         return cell ? { ...p, start: this.startAt(cell.col), row: cell.row } : p;
       }),
+    });
+  }
+
+  /**
+   * Crée d'un coup des projets importés dans le bac commun : sans équipe ni dates, en charge libre,
+   * sur une personne. Un seul `commit()`, donc un seul Ctrl+Z pour tout annuler.
+   * Les doublons ont déjà été écartés par l'aperçu (`reviewImport`), calculé sur l'état courant.
+   */
+  importProjects(drafts: readonly ImportDraft[]): void {
+    if (drafts.length === 0) return;
+    const created = drafts.map(
+      (d): Project => ({
+        ...initialDims(d.charge, 1),
+        id: newId('p'),
+        teamId: null,
+        name: d.name,
+        mode: 'free',
+        color: d.color,
+        start: null,
+        row: null,
+        meta: d.meta,
+      }),
+    );
+    this.commit({ ...this.current(), projects: [...this.projects(), ...created] });
+    const n = created.length;
+    this.toast.show(`${n} ${n > 1 ? 'projets importés' : 'projet importé'} dans le bac commun.`, {
+      label: 'Annuler',
+      run: () => this.undo(),
     });
   }
 

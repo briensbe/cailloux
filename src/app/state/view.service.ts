@@ -33,6 +33,12 @@ interface StoredView {
 }
 
 /** État purement visuel : il n'entre pas dans l'historique d'annulation, mais il est retenu d'une visite à l'autre. */
+/** Un fichier lu, prêt pour l'aperçu d'import. */
+export interface ImportSource {
+  fileName: string;
+  table: string[][];
+}
+
 @Injectable({ providedIn: 'root' })
 export class ViewService {
   private readonly store = inject(PlanningStore);
@@ -96,6 +102,12 @@ export class ViewService {
    */
   readonly newProjectFor = signal<{ teamId: string | null } | null>(null);
 
+  /**
+   * Aperçu d'import : `null` = fermé ; sinon le fichier lu (première ligne = en-têtes).
+   * Non retenu dans le stockage : un aperçu interrompu par un rechargement est simplement abandonné.
+   */
+  readonly importSource = signal<ImportSource | null>(null);
+
   constructor() {
     effect(() => {
       const view: StoredView = {
@@ -138,6 +150,7 @@ export class ViewService {
     if (mode === 'etagere') {
       this.store.select(null);
       this.newProjectFor.set(null);
+      this.importSource.set(null);
     }
     this.mode.set(mode);
   }

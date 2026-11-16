@@ -27,6 +27,8 @@ export class Inspector {
   });
   /** Borne des personnes : l'effectif de l'équipe, ou l'effectif maximal pour un projet du bac commun. */
   protected readonly maxPersons = computed(() => this.team()?.size ?? MAX_TEAM_SIZE);
+  /** Les colonnes d'origine d'un projet importé, dans l'ordre du fichier. */
+  protected readonly meta = computed(() => Object.entries(this.project()?.meta ?? {}));
   protected readonly kind = computed(() => stoneKind(this.project()?.charge ?? 0));
   protected readonly air = computed(() => {
     const p = this.project();

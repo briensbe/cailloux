@@ -19,6 +19,7 @@ import { Etagere } from './ui/etagere/etagere';
 import { DragOverlay } from './ui/drag-overlay';
 import { Icon } from './ui/icon';
 import { Inspector } from './ui/inspector/inspector';
+import { ImportDialog } from './ui/import-dialog/import-dialog';
 import { ProjectDialog } from './ui/project-dialog/project-dialog';
 import { Reservoir } from './ui/reservoir/reservoir';
 import { Stepper } from './ui/stepper';
@@ -26,7 +27,7 @@ import { Toasts } from './ui/toasts';
 
 @Component({
   selector: 'app-root',
-  imports: [Reservoir, Etagere, Inspector, ProjectDialog, DragOverlay, Dock, Toasts, Icon, Stepper, DecimalPipe],
+  imports: [Reservoir, Etagere, Inspector, ProjectDialog, ImportDialog, DragOverlay, Dock, Toasts, Icon, Stepper, DecimalPipe],
   templateUrl: './app.html',
   styleUrl: './app.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

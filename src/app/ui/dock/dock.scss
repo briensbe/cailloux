@@ -90,11 +90,14 @@ header {
   font-style: italic;
 }
 
+// Les briques passent à la ligne ; au-delà de quelques rangées, le dock défile verticalement.
 .items {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
-  gap: 10px;
-  overflow-x: auto;
+  gap: 8px 10px;
+  max-height: min(30vh, 280px);
+  overflow-y: auto;
   min-height: 56px;
   padding: 2px 14px 14px;
 }

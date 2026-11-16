@@ -2,10 +2,13 @@
 <aside
   class="dock"
   [class.open]="view.dockOpen()"
-  [class.active]="active()"
+  [class.active]="active() || fileOver()"
   [class.read-only]="readOnly()"
   [attr.data-drop-kind]="readOnly() ? null : 'common'"
   aria-label="Bac commun"
+  (dragover)="onFileOver($event)"
+  (dragleave)="onFileLeave($event)"
+  (drop)="onFileDrop($event)"
 >
   <header>
     <button
@@ -34,6 +37,16 @@
     @if (readOnly()) {
       <span class="ro">Lecture seule</span>
     }
+    <input #picker type="file" accept=".xlsx" hidden (change)="onFilePicked($event)" />
+    <button
+      type="button"
+      class="btn"
+      [disabled]="readOnly()"
+      (click)="picker.click()"
+      title="Importer une liste de projets depuis un fichier Excel (.xlsx), ou déposer le fichier ici"
+    >
+      <app-icon name="file" /> Importer…
+    </button>
     <button
       type="button"
       class="btn btn-primary"
@@ -50,7 +63,7 @@
       @for (p of projects(); track p.id) {
         @let m = miniSize(p);
         <app-brick
-          class="mini"
+          class="mini pill"
           [tabindex]="readOnly() ? -1 : 0"
           [project]="p"
           [dims]="p"
@@ -66,7 +79,7 @@
           @if (readOnly()) {
             Aucun projet en attente d'arbitrage.
           } @else {
-            Glissez une brique ici pour la remettre en commun, ou créez un caillou qu'aucune équipe n'a encore pris.
+            Glissez une brique ici pour la remettre en commun, créez un caillou qu'aucune équipe n'a encore pris, ou déposez un fichier Excel de projets.
           }
         </span>
       }

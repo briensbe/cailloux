@@ -1,0 +1,132 @@
+@if (source(); as s) {
+  @if (review(); as r) {
+    @let t = tally();
+    <dialog #dialog class="dialog" (close)="onClosed()">
+      <header>
+        <p class="eyebrow">Importer dans le bac commun</p>
+        <h2 class="file">{{ s.fileName }}</h2>
+        <p class="tally">
+          {{ r.lines.length }} lignes · {{ t.new }} {{ t.new > 1 ? 'nouvelles' : 'nouvelle' }}
+          @if (t.existing) {
+            · {{ t.existing }} déjà {{ t.existing > 1 ? 'présentes' : 'présente' }}
+          }
+          @if (t.duplicate) {
+            · {{ t.duplicate }} en double
+          }
+          @if (t.ignored) {
+            · {{ t.ignored }} sans nom
+          }
+        </p>
+
+        <div class="controls">
+          <label class="default">
+            Charge par défaut
+            <input
+              type="number"
+              min="0.5"
+              step="0.5"
+              [value]="displayedDefault()"
+              (change)="setDefaultCharge($event)"
+            />
+            <em>j/h</em>
+          </label>
+          @if (r.statuses.length > 0) {
+            <div class="statuses" role="group" aria-label="Statuts retenus">
+              @for (st of r.statuses; track st.value) {
+                <button
+                  type="button"
+                  [attr.aria-pressed]="!isExcluded(st.value)"
+                  (click)="toggleStatus(st.value)"
+                >
+                  {{ st.value || '(sans statut)' }} <span>{{ st.count }}</span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </header>
+
+      <div class="lines">
+        <table>
+          <thead>
+            <tr>
+              <th><span class="sr">Importer</span></th>
+              <th>Nom</th>
+              <th>Charge</th>
+              <th>État</th>
+              @if (r.statuses.length > 0) {
+                <th>Statut</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (line of r.lines; track line.index) {
+              <tr [class]="line.state" [class.off]="!line.checked">
+                <td>
+                  <input
+                    type="checkbox"
+                    [checked]="line.checked"
+                    [disabled]="line.state !== 'new'"
+                    (change)="check(line, $event)"
+                    [attr.aria-label]="'Importer ' + line.name"
+                  />
+                </td>
+                <td class="name">
+                  <i
+                    [style.background]="stones[line.color].base"
+                    [title]="stones[line.color].label"
+                  ></i>
+                  <input
+                    [value]="line.name"
+                    (change)="rename(line, $event)"
+                    (keydown.enter)="$any($event.target).blur(); $event.preventDefault()"
+                    spellcheck="false"
+                    aria-label="Nom du projet"
+                  />
+                </td>
+                <td class="charge">
+                  <input
+                    type="number"
+                    min="0.5"
+                    step="0.5"
+                    [value]="line.charge"
+                    (change)="setCharge(line, $event)"
+                    aria-label="Charge en jours-homme"
+                  />
+                </td>
+                <td>
+                  <span class="state">{{ stateLabels[line.state] }}</span>
+                </td>
+                @if (r.statuses.length > 0) {
+                  <td class="status">{{ line.status }}</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <footer>
+        @let w = waiting();
+        <p class="total">
+          <strong>{{ r.count }}</strong> {{ r.count > 1 ? 'projets' : 'projet' }} ·
+          <span class="mono">{{ r.charge | number: '1.0-1' }}&nbsp;j/h</span>
+          @if (r.count > 0) {
+            <span class="fits" [class.ko]="!w.fits">{{
+              w.fits ? 'tiendrait' : 'ne tiendrait pas'
+            }}</span>
+            <small>
+              avec le bac commun, face aux {{ w.remaining | number: '1.0-0' }}&nbsp;j/h restants ({{
+                view.periodLabel().toLowerCase()
+              }})
+            </small>
+          }
+        </p>
+        <button type="button" class="btn" (click)="close()">Annuler</button>
+        <button type="button" class="btn btn-primary" [disabled]="r.count === 0" (click)="import()">
+          <app-icon name="in" /> Importer {{ r.count }} {{ r.count > 1 ? 'projets' : 'projet' }}
+        </button>
+      </footer>
+    </dialog>
+  }
+}

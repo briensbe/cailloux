@@ -343,6 +343,34 @@
   }
 }
 
+// Gélule du dock du bac commun : toujours le nom sur deux lignes au plus (ellipse en fin), puis la
+// charge. Ces règles, plus spécifiques, l'emportent sur les requêtes de conteneur qui, selon la taille,
+// réduiraient le nom à une ligne ou masqueraient la charge.
+:host(.pill) {
+  .face {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 2px;
+    padding: 5px 9px;
+    border-radius: 14px;
+  }
+  .name {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    font-size: 12px;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+  .meta {
+    display: flex;
+  }
+  .shape,
+  .mode {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   :host,
   :host(.is-dropped) {

@@ -132,6 +132,20 @@
       }
     </section>
 
+    @if (meta().length > 0) {
+      <details class="meta">
+        <summary>
+          Métadonnées <span>({{ meta().length }})</span>
+        </summary>
+        <dl>
+          @for (m of meta(); track m[0]) {
+            <dt>{{ m[0] }}</dt>
+            <dd>{{ m[1] }}</dd>
+          }
+        </dl>
+      </details>
+    }
+
     <footer>
       @if (p.teamId === null) {
         <!-- Sans équipe, pas de vase où le poser : on choisit d'abord une équipe. -->

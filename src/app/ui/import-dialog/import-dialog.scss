@@ -1,0 +1,222 @@
+.dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(860px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  border: 0;
+  border-radius: 26px;
+  background: #fbf8f2;
+  color: var(--ink);
+  box-shadow: 0 50px 100px -30px rgb(30 20 10 / 0.6);
+  overflow: hidden;
+
+  &:not([open]) {
+    display: none;
+  }
+  &::backdrop {
+    background: rgb(40 32 24 / 0.38);
+    backdrop-filter: blur(3px);
+  }
+}
+
+header {
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.file {
+  margin: 0;
+  font: 800 24px var(--font-display);
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.tally {
+  margin: 4px 0 12px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  font-size: 13px;
+}
+
+// Plus spécifique que la règle commune des champs du tableau (plus bas), qui les rend transparents.
+.controls .default input {
+  width: 64px;
+  margin: 0 4px 0 8px;
+  border-color: var(--line-strong);
+  background: white;
+  font-family: var(--font-mono);
+}
+
+.statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  button {
+    padding: 4px 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: 14px;
+    background: transparent;
+    color: var(--ink-faint);
+    font: inherit;
+    text-decoration: line-through;
+    cursor: pointer;
+    &[aria-pressed='true'] {
+      background: var(--chip);
+      color: var(--ink);
+      text-decoration: none;
+    }
+    span {
+      margin-left: 2px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+  }
+}
+
+.lines {
+  flex: 1;
+  min-height: 120px;
+  overflow-y: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 8px 6px;
+  background: #f3eee5;
+  color: var(--ink-soft);
+  font-size: 11px;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+td {
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--line);
+  &:first-child {
+    padding-left: 18px;
+  }
+}
+
+input:not([type='checkbox']) {
+  box-sizing: border-box;
+  padding: 3px 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  &:hover,
+  &:focus {
+    border-color: var(--line-strong);
+    background: white;
+  }
+}
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  i {
+    flex: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+  }
+  input {
+    width: 100%;
+  }
+}
+
+.charge input {
+  width: 64px;
+  font-family: var(--font-mono);
+}
+
+.state {
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.status {
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.off td:not(:first-child) {
+  opacity: 0.5;
+}
+
+.existing .state,
+.duplicate .state {
+  color: #a5281b;
+  font-weight: 700;
+}
+
+.ignored .state {
+  color: var(--ink-faint);
+}
+
+footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--line);
+}
+
+.total {
+  flex: 1;
+  margin: 0;
+  font-size: 13px;
+  small {
+    color: var(--ink-soft);
+  }
+}
+
+.fits {
+  margin: 0 6px;
+  padding: 1px 8px;
+  border-radius: 9px;
+  background: #dff1e6;
+  color: #1f6b3e;
+  font-size: 11px;
+  font-weight: 700;
+  &.ko {
+    background: #fbe3df;
+    color: #a5281b;
+  }
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
