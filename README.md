@@ -22,6 +22,11 @@ les gros cailloux d'abord, puis les petits, le sable, l'eau.
   le dock. Un aperçu permet de choisir les lignes, de filtrer par statut et de fixer les charges avant d'importer ;
   un projet est reconnu par son nom (à la casse et aux espaces près), et les autres colonnes sont gardées comme
   métadonnées, visibles dans l'inspecteur. Un seul Ctrl+Z annule tout l'import.
+- **Import d'un export de planification** (`.json`, même bouton) : chaque projet est comparé à Cailloux
+  (nouveau, à poser, à jour, écart, non planifié, sans suite) et posé à sa date, dans son équipe, sur une
+  personne et toute sa durée planifiée à venir. Les équipes absentes sont créées avec l'effectif saisi,
+  les projets sans place ou sans semaine planifiée vont au bac de leur équipe, et les écarts sont laissés
+  tels quels sauf demande. L'aperçu montre exactement ce qui sera fait ; un seul Ctrl+Z annule tout.
 - **Aucune saisie perdue** : réduire une équipe ou raccourcir la fenêtre ne déplace rien ; les briques concernées
   sont signalées (débordement, hors fenêtre).
 - **« Le vase est-il plein ? »** verse l'eau dans les interstices de la période et répond avec la capacité restante

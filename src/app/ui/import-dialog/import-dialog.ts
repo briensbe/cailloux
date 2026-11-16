@@ -153,6 +153,9 @@ export class ImportDialog {
 
   protected close(): void {
     this.dialog()?.nativeElement.close();
+    // On n'attend pas l'événement `close` : le navigateur peut le retarder (page en arrière-plan).
+    // Il reste utile pour la touche Échap, et un second appel est sans effet.
+    this.onClosed();
   }
 
   /** Fermeture par un bouton, par Échap ou après l'import. */

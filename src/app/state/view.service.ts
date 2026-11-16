@@ -1,4 +1,5 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
+import { PlanningExport } from '../domain/planning-export';
 import { Period, PERIOD_PRESETS, periodEndExclusive, PeriodPreset, presetPeriod } from '../domain/period';
 import { addDays, formatShort, parseIsoDate } from '../domain/weeks';
 import { PlanningStore } from './planning.store';
@@ -33,6 +34,12 @@ interface StoredView {
 }
 
 /** État purement visuel : il n'entre pas dans l'historique d'annulation, mais il est retenu d'une visite à l'autre. */
+/** Un export de planification lu, prêt pour l'aperçu de comparaison. */
+export interface PlanningSource {
+  fileName: string;
+  export: PlanningExport;
+}
+
 /** Un fichier lu, prêt pour l'aperçu d'import. */
 export interface ImportSource {
   fileName: string;
@@ -108,6 +115,9 @@ export class ViewService {
    */
   readonly importSource = signal<ImportSource | null>(null);
 
+  /** Aperçu de comparaison avec un export de planification : `null` = fermé. Non retenu, comme l'aperçu d'import. */
+  readonly planningSource = signal<PlanningSource | null>(null);
+
   constructor() {
     effect(() => {
       const view: StoredView = {
@@ -151,6 +161,7 @@ export class ViewService {
       this.store.select(null);
       this.newProjectFor.set(null);
       this.importSource.set(null);
+      this.planningSource.set(null);
     }
     this.mode.set(mode);
   }

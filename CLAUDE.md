@@ -21,6 +21,8 @@ Le [README.md](README.md) décrit le produit, les commandes et le déploiement. 
   - `period.ts` : la période d'analyse et ses indicateurs (capacité, charge planifiée, air, taux de remplissage, capacité restante, charge en attente). Vocabulaire : [GLOSSARY.md](GLOSSARY.md).
   - `names.ts` : identité des projets par leur nom (`nameKey`, `cleanName`) et clé des en-têtes de colonne (`headerKey`, qui ignore aussi les accents).
   - `stones.ts` : `nearestStone(hex)`, la pierre la plus proche d'une couleur (distance OKLab).
+  - `planning-export.ts` : lecture défensive d'un export JSON de planification (`parsePlanningExport`).
+  - `planning-review.ts` : comparaison de cet export avec le planning (`reviewPlanning` : cible = partie à venir sur une personne et toute la durée, états, actions, **simulation des poses**) et nouvel état (`applyPlanning`, fonction pure appliquée par le store en un seul `commit()`). Pose à date exacte : colonne de la cible, ligne libre la plus basse (`canOccupy`), jamais l'aimant, qui décalerait les dates.
   - `import.ts` : l'aperçu d'un import (`reviewImport`), recalculé à chaque choix de l'utilisateur : états des lignes (nouveau, déjà présent, doublon, ignoré), coches, charges, pierres, métadonnées.
 - **`io/`** : lecture de fichiers avec les API du navigateur. `xlsx.ts` lit la première feuille d'un `.xlsx` (ZIP par `DecompressionStream`, XML par `DOMParser`), sans dépendance. Testé comme le domaine.
 - **`state/`** : services `providedIn: 'root'` construits sur des signals.

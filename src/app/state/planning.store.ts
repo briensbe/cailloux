@@ -2,6 +2,7 @@ import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { Dims, fitToTeam, initialDims } from '../domain/capacity';
 import { demoState } from '../domain/demo';
 import { ImportDraft } from '../domain/import';
+import { applyPlanning, PlanningReview } from '../domain/planning-review';
 import { Bounds, canOccupy, Cell, compact, findFirstFit, findNearestFree, Occupancy, Rect, Size } from '../domain/geometry';
 import { MAX_TEAM_SIZE, newId, PlanningState, Project, StoneColor, STONE_COLORS, Team } from '../domain/model';
 import { effectiveWindowStart, extensionToFit, isOverflowing, outsideSide, toWindowRect } from '../domain/window';
@@ -421,6 +422,23 @@ export class PlanningStore {
       label: 'Annuler',
       run: () => this.undo(),
     });
+  }
+
+  /**
+   * Applique une comparaison avec un export de planification (`reviewPlanning`) : équipes créées,
+   * fenêtre agrandie, projets créés, posés, alignés ou rangés. Un seul `commit()`, donc un seul Ctrl+Z.
+   * La revue a été calculée sur l'état courant (le dialogue est modal, rien n'a pu changer entre-temps).
+   */
+  applyPlanning(review: PlanningReview): void {
+    if (!review.ready || review.summary.actions === 0) return;
+    this.commit(applyPlanning(this.current(), review, newId));
+    const s = review.summary;
+    const parts = [
+      s.placed + s.aligned > 0 ? `${s.placed + s.aligned} ${s.placed + s.aligned > 1 ? 'posés' : 'posé'}` : '',
+      s.tray > 0 ? `${s.tray} au bac d'équipe` : '',
+      s.teamsCreated > 0 ? `${s.teamsCreated} ${s.teamsCreated > 1 ? 'équipes créées' : 'équipe créée'}` : '',
+    ].filter(Boolean);
+    this.toast.show(`Planification importée : ${parts.join(', ')}.`, { label: 'Annuler', run: () => this.undo() });
   }
 
   resetDemo(): void {

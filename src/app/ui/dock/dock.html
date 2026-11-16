@@ -37,13 +37,13 @@
     @if (readOnly()) {
       <span class="ro">Lecture seule</span>
     }
-    <input #picker type="file" accept=".xlsx" hidden (change)="onFilePicked($event)" />
+    <input #picker type="file" accept=".xlsx,.json" hidden (change)="onFilePicked($event)" />
     <button
       type="button"
       class="btn"
       [disabled]="readOnly()"
       (click)="picker.click()"
-      title="Importer une liste de projets depuis un fichier Excel (.xlsx), ou déposer le fichier ici"
+      title="Importer une liste de projets (Excel .xlsx) ou un export de planification (.json), ou déposer le fichier ici"
     >
       <app-icon name="file" /> Importer…
     </button>

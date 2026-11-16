@@ -11,6 +11,7 @@ import {
   signal,
 } from '@angular/core';
 import { findNameColumn } from '../../domain/import';
+import { parsePlanningExport } from '../../domain/planning-export';
 import { Project } from '../../domain/model';
 import { commonWaiting, periodFigures } from '../../domain/period';
 import { DragService } from '../../state/drag.service';
@@ -157,6 +158,7 @@ export class Dock {
   }
 
   private async open(file: File): Promise<void> {
+    if (file.name.toLowerCase().endsWith('.json')) return this.openPlanning(file);
     let table: string[][];
     try {
       table = await readFirstSheet(await file.arrayBuffer());
@@ -173,6 +175,23 @@ export class Dock {
       return;
     }
     this.view.importSource.set({ fileName: file.name, table });
+  }
+
+  /** Un export JSON de planification : on le lit, puis l'aperçu de comparaison s'ouvre. */
+  private async openPlanning(file: File): Promise<void> {
+    let data: unknown;
+    try {
+      data = JSON.parse(await file.text());
+    } catch {
+      this.toast.show(`« ${file.name} » n'a pas pu être lu : ce n'est pas un fichier JSON valide.`);
+      return;
+    }
+    const planning = parsePlanningExport(data);
+    if (!planning) {
+      this.toast.show(`« ${file.name} » n'est pas un export de planification (listes « projets » et « equipes » attendues).`);
+      return;
+    }
+    this.view.planningSource.set({ fileName: file.name, export: planning });
   }
 }
 

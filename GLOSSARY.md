@@ -45,7 +45,7 @@ _À éviter_ : masquée, perdue
 ### Import
 
 **Import** :
-L'entrée dans le bac commun d'une liste de projets venue d'un fichier (un export Excel), après un aperçu. Un projet y est reconnu par son nom, à la casse et aux espaces près.
+L'entrée dans Cailloux de projets venus d'un fichier, après un aperçu : un export Excel remplit le bac commun ; un export de planification (JSON) est comparé au planning, puis pose les projets à leurs dates dans leurs équipes. Un projet y est reconnu par son nom, à la casse et aux espaces près.
 _À éviter_ : synchronisation, chargement
 
 **Métadonnées** :
@@ -75,7 +75,7 @@ Une capacité restante négative, qui ne peut venir que de briques en débordeme
 _À éviter_ : dépassement, sur-allocation
 
 **Air** :
-La part des cases réservées par un projet que sa charge réelle ne remplit pas, due à l'arrondi aux cases entières.
+La part des cases réservées par un projet que sa charge réelle ne remplit pas : due à l'arrondi aux cases entières, ou à une charge diluée dans le temps (un projet importé occupe une personne sur toute sa durée planifiée, même s'il n'est chargé que d'un jour par semaine).
 _À éviter_ : marge, perte
 
 **Charge en attente** :

@@ -1,0 +1,139 @@
+@if (source(); as s) {
+  @if (review(); as r) {
+    <dialog #dialog class="dialog" (close)="onClosed()">
+      <header>
+        <p class="eyebrow">Comparer avec la planification</p>
+        <h2 class="file">{{ s.fileName }}</h2>
+        <p class="tally">
+          @for (t of tally(); track t.status) {
+            <span class="badge" [class]="t.status">{{ t.count }} {{ t.label }}</span>
+          }
+          @if (absentCount()) {
+            <span class="badge absent">{{ absentCount() }} absents de l'export</span>
+          }
+        </p>
+        @if (r.ambiguous.length) {
+          <p class="warn">
+            Plusieurs projets de Cailloux portent le même nom ({{ r.ambiguous.join(', ') }}) : le
+            premier trouvé est utilisé.
+          </p>
+        }
+      </header>
+
+      <div class="body">
+        @for (team of r.teams; track team.key) {
+          <details class="team" open>
+            <summary>
+              <strong>{{ team.name }}</strong>
+              @if (team.existing) {
+                <span class="size">{{ team.existing.size }} pers.</span>
+              } @else if (team.key !== '') {
+                <label class="size new" (click)="$event.stopPropagation()">
+                  à créer :
+                  <input
+                    type="number"
+                    min="1"
+                    [max]="maxTeamSize"
+                    step="1"
+                    [value]="team.size ?? ''"
+                    placeholder="?"
+                    (change)="setSize(team, $event)"
+                    [attr.aria-label]="'Effectif de ' + team.name"
+                  />
+                  pers.
+                </label>
+              }
+              <span class="count">{{ team.lines.length }} projets</span>
+            </summary>
+
+            <ul>
+              @for (line of team.lines; track line.key) {
+                <li [class]="line.status" [class.off]="line.action === 'none'">
+                  <span class="badge" [class]="line.status">{{ statusLabels[line.status] }}</span>
+                  <span class="main">
+                    <span class="name" [title]="line.name">{{ line.name }}</span>
+                    <span class="detail">
+                      @if (line.target) {
+                        <span>{{ describeTarget(line.target) }}</span>
+                      } @else if (line.status === 'unplanned' && line.exported.remaining) {
+                        <span>restant {{ line.exported.remaining | number: '1.0-1' }} j/h</span>
+                      }
+                      @if (line.drift && line.existing) {
+                        <span class="current">Cailloux : {{ describeCurrent(line.existing) }}</span>
+                      }
+                    </span>
+                  </span>
+                  <span
+                    class="outcome"
+                    [class.ko]="line.outcome.kind === 'tray' || line.outcome.kind === 'unchanged'"
+                  >
+                    {{ describeOutcome(line.outcome) }}
+                  </span>
+                  @if (line.actions.length > 1) {
+                    <select
+                      (change)="setAction(line, $event)"
+                      [attr.aria-label]="'Action pour ' + line.name"
+                    >
+                      @for (a of line.actions; track a) {
+                        <option [value]="a" [selected]="a === line.action">
+                          {{ actionLabels[a] }}
+                        </option>
+                      }
+                    </select>
+                  } @else {
+                    <span></span>
+                  }
+                </li>
+              }
+              @for (p of team.absent; track p.id) {
+                <li class="absent off">
+                  <span class="badge absent">Absent de l'export</span>
+                  <span class="main">
+                    <span class="name" [title]="p.name">{{ p.name }}</span>
+                    <span class="detail">laissé tel quel</span>
+                  </span>
+                  <span></span>
+                  <span></span>
+                </li>
+              }
+            </ul>
+          </details>
+        }
+      </div>
+
+      <footer>
+        @let sum = r.summary;
+        <p class="total">
+          @if (r.missingSizes.length) {
+            <span class="ko">Effectif à saisir : {{ r.missingSizes.join(', ') }}</span>
+          } @else {
+            <strong>{{ sum.actions }}</strong> {{ sum.actions > 1 ? 'actions' : 'action' }} ·
+            {{ sum.placed + sum.aligned }} posés · {{ sum.tray }} au bac d'équipe
+            @if (sum.created) {
+              · {{ sum.created }} créés
+            }
+            @if (sum.teamsCreated) {
+              · {{ sum.teamsCreated }}
+              {{ sum.teamsCreated > 1 ? 'équipes créées' : 'équipe créée' }}
+            }
+            @if (r.extraWeeks) {
+              · fenêtre +{{ r.extraWeeks }} sem.
+            }
+            @if (sum.unchanged) {
+              · <span class="ko">{{ sum.unchanged }} sans place, laissés où ils sont</span>
+            }
+          }
+        </p>
+        <button type="button" class="btn" (click)="close()">Annuler</button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="!r.ready || sum.actions === 0"
+          (click)="apply()"
+        >
+          <app-icon name="in" /> Appliquer
+        </button>
+      </footer>
+    </dialog>
+  }
+}

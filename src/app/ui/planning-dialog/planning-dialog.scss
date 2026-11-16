@@ -1,0 +1,203 @@
+.dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(1040px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  border: 0;
+  border-radius: 26px;
+  background: #fbf8f2;
+  color: var(--ink);
+  box-shadow: 0 50px 100px -30px rgb(30 20 10 / 0.6);
+  overflow: hidden;
+
+  &:not([open]) {
+    display: none;
+  }
+  &::backdrop {
+    background: rgb(40 32 24 / 0.38);
+    backdrop-filter: blur(3px);
+  }
+}
+
+header {
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.file {
+  margin: 0;
+  font: 800 24px var(--font-display);
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.tally {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 0;
+}
+
+.warn {
+  margin: 8px 0 0;
+  color: #a5281b;
+  font-size: 12.5px;
+}
+
+// Un badge par état : vert pour ce qui sera fait, ambre pour un écart, gris pour le reste.
+.badge {
+  padding: 2px 8px;
+  border-radius: 9px;
+  background: var(--chip);
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  &.new,
+  &.toPlace {
+    background: #dff1e6;
+    color: #1f6b3e;
+  }
+  &.drift,
+  &.absent {
+    background: #fbefd6;
+    color: #8a5a07;
+  }
+}
+
+.body {
+  flex: 1;
+  min-height: 120px;
+  overflow-y: auto;
+  padding: 6px 0 12px;
+}
+
+.team summary {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 24px;
+  background: #f3eee5;
+  font-size: 13px;
+  cursor: pointer;
+  strong {
+    font: 700 15px var(--font-display);
+  }
+}
+
+.size {
+  color: var(--ink-soft);
+  &.new {
+    color: #8a5a07;
+    font-weight: 700;
+  }
+  input {
+    width: 48px;
+    margin: 0 4px;
+    padding: 2px 6px;
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    font: inherit;
+    font-family: var(--font-mono);
+  }
+}
+
+.count {
+  margin-left: auto;
+  color: var(--ink-faint);
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+li {
+  display: grid;
+  // État | nom et détail | issue | action. Le détail passe sous le nom pour tenir sur un écran étroit.
+  grid-template-columns: 96px minmax(0, 1fr) minmax(110px, auto) minmax(150px, auto);
+  align-items: center;
+  gap: 10px;
+  padding: 5px 24px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+  &.off .name,
+  &.off .detail {
+    opacity: 0.55;
+  }
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 12px;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+.current {
+  color: #8a5a07;
+}
+
+.outcome {
+  color: #1f6b3e;
+  font-size: 12px;
+  &.ko {
+    color: #a5281b;
+  }
+}
+
+select {
+  padding: 3px 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: white;
+  font: inherit;
+}
+
+footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--line);
+}
+
+.total {
+  flex: 1;
+  margin: 0;
+  font-size: 13px;
+  .ko {
+    color: #a5281b;
+    font-weight: 700;
+  }
+}
