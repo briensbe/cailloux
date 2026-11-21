@@ -19,6 +19,7 @@ import { Etagere } from './ui/etagere/etagere';
 import { DragOverlay } from './ui/drag-overlay';
 import { Icon } from './ui/icon';
 import { Inspector } from './ui/inspector/inspector';
+import { ConfirmDeleteDialog } from './ui/confirm-delete-dialog/confirm-delete-dialog';
 import { ImportDialog } from './ui/import-dialog/import-dialog';
 import { PlanningDialog } from './ui/planning-dialog/planning-dialog';
 import { ProjectDialog } from './ui/project-dialog/project-dialog';
@@ -28,7 +29,7 @@ import { Toasts } from './ui/toasts';
 
 @Component({
   selector: 'app-root',
-  imports: [Reservoir, Etagere, Inspector, ProjectDialog, ImportDialog, PlanningDialog, DragOverlay, Dock, Toasts, Icon, Stepper, DecimalPipe],
+  imports: [Reservoir, Etagere, Inspector, ProjectDialog, ImportDialog, PlanningDialog, ConfirmDeleteDialog, DragOverlay, Dock, Toasts, Icon, Stepper, DecimalPipe],
   templateUrl: './app.html',
   styleUrl: './app.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -155,7 +156,7 @@ export class App {
     };
     if (e.key === 'Delete' || e.key === 'Backspace') {
       e.preventDefault();
-      this.store.removeProject(id);
+      this.view.confirmDeleteProjectId.set(id);
     } else if (arrows[e.key]) {
       e.preventDefault();
       this.store.nudge(id, ...arrows[e.key]);

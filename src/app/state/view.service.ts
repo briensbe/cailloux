@@ -118,6 +118,9 @@ export class ViewService {
   /** Aperçu de comparaison avec un export de planification : `null` = fermé. Non retenu, comme l'aperçu d'import. */
   readonly planningSource = signal<PlanningSource | null>(null);
 
+  /** Dialogue d'avertissement avant suppression d'un projet : `null` = fermé ; sinon l'identifiant du projet. */
+  readonly confirmDeleteProjectId = signal<string | null>(null);
+
   constructor() {
     effect(() => {
       const view: StoredView = {
@@ -162,6 +165,7 @@ export class ViewService {
       this.newProjectFor.set(null);
       this.importSource.set(null);
       this.planningSource.set(null);
+      this.confirmDeleteProjectId.set(null);
     }
     this.mode.set(mode);
   }

@@ -4,6 +4,7 @@ import { footprint, weeksFor, withCharge, withPersons, withWeeks } from '../../d
 import { LoadMode, MAX_TEAM_SIZE, StoneColor, STONE_COLORS, STONES, stoneKind } from '../../domain/model';
 import { addDays, formatShort, isoWeek, parseIsoDate } from '../../domain/weeks';
 import { PlanningStore } from '../../state/planning.store';
+import { ViewService } from '../../state/view.service';
 import { Icon } from '../icon';
 import { Stepper } from '../stepper';
 
@@ -17,6 +18,7 @@ import { Stepper } from '../stepper';
 })
 export class Inspector {
   protected readonly store = inject(PlanningStore);
+  protected readonly view = inject(ViewService);
   protected readonly project = this.store.selected;
   protected readonly colors = STONE_COLORS;
   protected readonly stones = STONES;

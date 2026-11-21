@@ -1,0 +1,28 @@
+@if (project(); as p) {
+  <dialog #dialog class="dialog" (close)="onClosed()" [style.--stone]="stoneColor()">
+    <header>
+      <p class="eyebrow">Avertissement</p>
+      <h2>Supprimer « {{ p.name }} » ?</h2>
+    </header>
+
+    <div class="body">
+      <p>
+        @if (team(); as t) {
+          Ce projet (<strong>{{ p.charge }} j·h</strong>) va être retiré de l'équipe « {{ t.name }} ».
+        } @else {
+          Ce projet (<strong>{{ p.charge }} j·h</strong>) va être retiré du bac commun.
+        }
+      </p>
+      <p class="hint">
+        Vous pourrez encore annuler cette suppression pendant quelques secondes après validation.
+      </p>
+    </div>
+
+    <footer>
+      <button type="button" class="btn btn-ghost" (click)="close()" autofocus>Annuler</button>
+      <button type="button" class="btn btn-danger" (click)="confirm()">
+        <app-icon name="trash" /> Supprimer le projet
+      </button>
+    </footer>
+  </dialog>
+}
