@@ -436,17 +436,19 @@ export class PlanningStore {
       this.markDropped(lastPlacedId);
     }
 
-    let message: string;
-    if (mode === 'tray') {
-      message = `${trayCount} ${trayCount > 1 ? 'cailloux déplacés' : 'caillou déplacé'} dans le bac d'attente de ${team.name}.`;
-    } else if (placedCount > 0 && trayCount === 0) {
-      message = `${placedCount} ${placedCount > 1 ? 'cailloux placés' : 'caillou placé'} dans ${team.name}.`;
-    } else if (placedCount > 0 && trayCount > 0) {
-      message = `${placedCount} ${placedCount > 1 ? 'placés' : 'placé'} dans ${team.name}, ${trayCount} en attente faute de place.`;
-    } else {
-      message = `Pas de place dans le vase de ${team.name} : ${trayCount} ${trayCount > 1 ? 'cailloux mis' : 'caillou mis'} en attente.`;
+    if (targets.some((p) => p.teamId !== teamId)) {
+      let message: string;
+      if (mode === 'tray') {
+        message = `${trayCount} ${trayCount > 1 ? 'cailloux déplacés' : 'caillou déplacé'} dans le bac d'attente de ${team.name}.`;
+      } else if (placedCount > 0 && trayCount === 0) {
+        message = `${placedCount} ${placedCount > 1 ? 'cailloux placés' : 'caillou placé'} dans ${team.name}.`;
+      } else if (placedCount > 0 && trayCount > 0) {
+        message = `${placedCount} ${placedCount > 1 ? 'placés' : 'placé'} dans ${team.name}, ${trayCount} en attente faute de place.`;
+      } else {
+        message = `Pas de place dans le vase de ${team.name} : ${trayCount} ${trayCount > 1 ? 'cailloux mis' : 'caillou mis'} en attente.`;
+      }
+      this.toast.show(message, { label: 'Annuler', run: () => this.undo() });
     }
-    this.toast.show(message, { label: 'Annuler', run: () => this.undo() });
   }
 
   /** Remet un lot de projets dans le bac commun (sans équipe ni dates) en une seule transaction annulable. */
@@ -499,11 +501,13 @@ export class PlanningStore {
     });
     this.select(null);
 
-    const message =
-      trayCount === 0
-        ? `${placedCount} ${placedCount > 1 ? 'cailloux placés' : 'caillou placé'} dans ${team.name}.`
-        : `${placedCount} ${placedCount > 1 ? 'placés' : 'placé'} dans ${team.name}, ${trayCount} en attente faute de place.`;
-    this.toast.show(message, { label: 'Annuler', run: () => this.undo() });
+    if (placements.some(({ project: p }) => p.teamId !== teamId)) {
+      const message =
+        trayCount === 0
+          ? `${placedCount} ${placedCount > 1 ? 'cailloux placés' : 'caillou placé'} dans ${team.name}.`
+          : `${placedCount} ${placedCount > 1 ? 'placés' : 'placé'} dans ${team.name}, ${trayCount} en attente faute de place.`;
+      this.toast.show(message, { label: 'Annuler', run: () => this.undo() });
+    }
   }
 
   /** Déplacement au clavier, case par case (y compris pour un projet déjà commencé). */

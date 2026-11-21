@@ -1,14 +1,17 @@
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { PlanningStore } from './planning.store';
+import { ToastService } from './toast.service';
 
 describe('PlanningStore — multi-sélection et déplacement par lot', () => {
   let store: PlanningStore;
+  let toast: ToastService;
 
   beforeEach(() => {
     localStorage.clear();
     TestBed.configureTestingModule({});
     store = TestBed.inject(PlanningStore);
+    toast = TestBed.inject(ToastService);
   });
 
   it('gère la sélection simple et multiple tout en gardant selectedId pour un seul élément', () => {
@@ -166,5 +169,24 @@ describe('PlanningStore — multi-sélection et déplacement par lot', () => {
     expect(store.projects().length).toBe(beforeCount);
     expect(store.projects().some((p) => p.id === s1.id)).toBe(true);
     expect(store.projects().some((p) => p.id === s2.id)).toBe(true);
+  });
+
+  it("n'affiche pas de toast d'annulation lors d'un déplacement au sein du même vase", () => {
+    const team = store.teams()[0];
+    const [p1, p2] = store.projectsOf(team.id);
+    expect(toast.toasts().length).toBe(0);
+
+    store.placeProjectsInTeam(team.id, [
+      { project: p1, cell: { col: 10, row: 0 }, dims: { weeks: p1.weeks, persons: p1.persons, charge: p1.charge } },
+      { project: p2, cell: { col: 10, row: 2 }, dims: { weeks: p2.weeks, persons: p2.persons, charge: p2.charge } },
+    ]);
+    expect(toast.toasts().length).toBe(0);
+
+    const otherTeam = store.teams()[1];
+    store.placeProjectsInTeam(otherTeam.id, [
+      { project: p1, cell: { col: 10, row: 0 }, dims: { weeks: p1.weeks, persons: p1.persons, charge: p1.charge } },
+    ]);
+    expect(toast.toasts().length).toBe(1);
+    expect(toast.toasts()[0].action?.label).toBe('Annuler');
   });
 });
