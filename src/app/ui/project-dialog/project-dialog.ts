@@ -62,7 +62,7 @@ export class ProjectDialog {
   protected readonly name = signal('');
   protected readonly charge = signal(20);
   protected readonly persons = signal(1);
-  protected readonly mode = signal<LoadMode>('free');
+  protected readonly mode = signal<LoadMode>('fixed');
   protected readonly color = signal<StoneColor>('terracotta');
 
   protected readonly dims = computed(() => {
@@ -125,7 +125,7 @@ export class ProjectDialog {
         this.name.set('');
         this.charge.set(20);
         this.persons.set(t.team ? t.size : 1);
-        this.mode.set('free');
+        this.mode.set('fixed');
         this.color.set(this.store.nextColor(t.team?.id ?? null));
       });
     });

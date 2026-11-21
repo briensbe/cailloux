@@ -553,7 +553,7 @@ export class PlanningStore {
   }
 
   /**
-   * Crée d'un coup des projets importés dans le bac commun : sans équipe ni dates, en charge libre,
+   * Crée d'un coup des projets importés dans le bac commun : sans équipe ni dates, en charge fixe,
    * sur une personne. Un seul `commit()`, donc un seul Ctrl+Z pour tout annuler.
    * Les doublons ont déjà été écartés par l'aperçu (`reviewImport`), calculé sur l'état courant.
    */
@@ -565,7 +565,7 @@ export class PlanningStore {
         id: newId('p'),
         teamId: null,
         name: d.name,
-        mode: 'free',
+        mode: 'fixed',
         color: d.color,
         start: null,
         row: null,

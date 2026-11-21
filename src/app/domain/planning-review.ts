@@ -454,7 +454,7 @@ export function applyPlanning(
         id: newId('p'),
         teamId,
         name: line.name,
-        mode: 'free',
+        mode: 'fixed',
         color:
           (exported.color ? nearestStone(exported.color) : null) ??
           STONE_COLORS[rank % STONE_COLORS.length],

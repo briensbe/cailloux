@@ -226,7 +226,7 @@ describe('planning-review', () => {
         row: 0,
         weeks: 2,
         charge: 2,
-        mode: 'free',
+        mode: 'fixed',
         color: 'lapis',
       });
     });
