@@ -147,7 +147,7 @@ export class App {
     }
     const id = this.store.selectedId();
     if (!id) return;
-    if (e.key === 'Enter' && this.view.mode() === 'etagere') {
+    if (e.key === 'Enter') {
       e.preventDefault();
       this.view.openInspector(id);
       return;

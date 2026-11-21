@@ -5,10 +5,78 @@
   [class.active]="active() || fileOver()"
   data-drop-kind="common"
   aria-label="Bac commun"
+  (keydown)="onDockKeydown($event)"
   (dragover)="onFileOver($event)"
   (dragleave)="onFileLeave($event)"
   (drop)="onFileDrop($event)"
 >
+  @if (multiActive()) {
+    <div class="batch-bar" role="region" aria-label="Actions sur la sélection">
+      <span class="batch-summary">
+        <strong>{{ selectedProjects().length }}&nbsp;sélectionnés</strong> ·
+        <span class="mono">{{ selectedCharge() | number: '1.0-1' }}&nbsp;j/h</span>
+      </span>
+
+      <div class="batch-actions">
+        @if (hasTeamProjects()) {
+          <button type="button" class="btn batch-btn" (click)="moveSelectedToCommon()" title="Remettre les projets sélectionnés dans le bac commun">
+            <app-icon name="in" /> Bac commun
+          </button>
+        }
+        @if (store.teams().length > 0) {
+          <button
+            type="button"
+            class="btn btn-primary batch-btn"
+            [attr.aria-expanded]="teamMenu() === 'place'"
+            (click)="toggleMenu('place')"
+          >
+            Placer dans vase <span class="caret">▾</span>
+          </button>
+          <button
+            type="button"
+            class="btn batch-btn"
+            [attr.aria-expanded]="teamMenu() === 'tray'"
+            (click)="toggleMenu('tray')"
+          >
+            Bac d'attente <span class="caret">▾</span>
+          </button>
+        }
+      </div>
+
+      <button
+        type="button"
+        class="btn btn-icon batch-clear"
+        (click)="clearSelection()"
+        title="Tout désélectionner (Échap)"
+        aria-label="Tout désélectionner"
+      >
+        <app-icon name="x" />
+      </button>
+
+      @if (teamMenu(); as mode) {
+        <div class="batch-menu" role="menu" [attr.aria-label]="mode === 'place' ? 'Placer dans le vase de' : 'Envoyer dans le bac d\'attente de'">
+          <p class="batch-menu-title">
+            {{ mode === 'place' ? 'Placer au plus tôt dans le vase de :' : 'Envoyer dans le bac d\'attente de :' }}
+          </p>
+          @for (c of teamChoices(); track c.team.id) {
+            <button type="button" class="batch-menu-item" role="menuitem" (click)="moveSelectedTo(c.team.id)">
+              <span class="team-info">
+                <strong>{{ c.team.name }}</strong>
+                <small>{{ c.team.size }}&nbsp;p.</small>
+              </span>
+              <span class="team-cap" [class.ok]="c.fits" [class.ko]="!c.fits">
+                @if (c.remaining >= 0) {
+                  reste {{ c.remaining | number: '1.0-0' }}&nbsp;j/h
+                } @else {
+                  surcharge {{ -c.remaining | number: '1.0-0' }}&nbsp;j/h
+                }
+              </span>
+            </button>
+          }
+        </div>
+      }
+    </div>
+  }
   <header>
     <button
       type="button"
@@ -56,19 +124,36 @@
     <div class="items">
       @for (p of projects(); track p.id) {
         @let m = miniSize(p);
-        <app-brick
-          class="mini pill"
-          tabindex="0"
-          [project]="p"
-          [dims]="p"
-          [selected]="store.selectedId() === p.id"
-          [style.width.px]="m.w"
-          [style.height.px]="m.h"
-          [class.is-dragging]="draggingId() === p.id"
-          (pointerdown)="press($event, p)"
-          (dblclick)="openDetails(p)"
-          (keydown.enter)="openDetails(p)"
-        />
+        @let picked = isSelected(p.id);
+        <div class="dock-item" [class.is-picked]="picked" [class.multi]="multiActive()">
+          <app-brick
+            class="mini pill"
+            tabindex="0"
+            [project]="p"
+            [dims]="p"
+            [selected]="picked"
+            [style.width.px]="m.w"
+            [style.height.px]="m.h"
+            [class.is-dragging]="draggingId() === p.id"
+            (pointerdown)="press($event, p)"
+            (dblclick)="openDetails(p)"
+            (keydown.enter)="openDetails(p)"
+          />
+          <button
+            type="button"
+            class="pick"
+            [class.checked]="picked"
+            (pointerdown)="$event.stopPropagation()"
+            (click)="togglePick($event, p)"
+            [attr.aria-label]="'Sélectionner ' + p.name"
+            [attr.aria-pressed]="picked"
+            title="Ajouter ou retirer de la sélection (Ctrl+clic / Shift+clic)"
+          >
+            @if (picked) {
+              ✓
+            }
+          </button>
+        </div>
       } @empty {
         <span class="hint">
           Glissez une brique ici pour la remettre en commun, créez un caillou qu'aucune équipe n'a encore pris, ou déposez un fichier Excel de projets.

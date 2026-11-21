@@ -134,7 +134,7 @@
             [attr.data-brick-id]="p.id"
             [project]="p"
             [dims]="d"
-            [selected]="store.selectedId() === p.id"
+            [selected]="store.selectedIds().has(p.id)"
             [resizable]="true"
             [cutStart]="box.cutStart"
             [cutEnd]="box.cutEnd"
@@ -149,7 +149,8 @@
             [class.is-dropped]="store.justDropped() === p.id"
             (pointerdown)="dnd.press($event, p, box.cutStart ? -item.r.col : 0)"
             (resizeStart)="startResize($event.event, item, $event.handle)"
-            (keydown.enter)="store.select(p.id)"
+            (dblclick)="view.openInspector(p.id)"
+            (keydown.enter)="view.openInspector(p.id)"
           />
         }
       </div>
@@ -185,12 +186,13 @@
       tabindex="0"
       [project]="p"
       [dims]="p"
-      [selected]="store.selectedId() === p.id"
+      [selected]="store.selectedIds().has(p.id)"
       [style.width.px]="m.w"
       [style.height.px]="m.h"
       [class.is-dragging]="draggingId() === p.id"
       (pointerdown)="dnd.press($event, p, 0, true)"
-      (keydown.enter)="store.select(p.id)"
+      (dblclick)="view.openInspector(p.id)"
+      (keydown.enter)="view.openInspector(p.id)"
     />
   } @empty {
     <span class="tray-hint">Glissez une brique ici pour la sortir du vase.</span>

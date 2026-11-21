@@ -54,6 +54,10 @@ export class DragService {
   press(event: PointerEvent, project: Project, hiddenWeeks = 0, mini = false): void {
     if (event.button !== 0) return;
     event.preventDefault();
+    if (event.ctrlKey || event.metaKey || event.shiftKey) {
+      this.store.toggleSelect(project.id);
+      return;
+    }
     const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
     const start = { x: event.clientX, y: event.clientY };
     let started = false;

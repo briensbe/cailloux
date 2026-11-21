@@ -87,9 +87,9 @@ export class ViewService {
   readonly activeCellH = computed(() => (this.mode() === 'etagere' ? SHELF_ROW_H : CELL_H));
   readonly activeFit = computed(() => (this.mode() === 'etagere' ? this.shelfFit() : this.fit()));
 
-  /** Ouverture explicite du panneau Inspecteur en mode Étagère (un simple clic sélectionne sans l'ouvrir). */
+  /** Ouverture explicite du panneau Inspecteur (un simple clic sélectionne sans l'ouvrir). */
   readonly inspectorOpen = signal(false);
-  readonly showInspector = computed(() => this.store.selected() !== null && (this.mode() === 'vases' || this.inspectorOpen()));
+  readonly showInspector = computed(() => this.store.selected() !== null && this.inspectorOpen());
 
   readonly periodChoice = signal<PeriodPreset | 'custom'>(this.stored.period);
   private readonly custom = signal<Period | null>(this.stored.custom);
@@ -184,8 +184,7 @@ export class ViewService {
   }
 
   closeInspector(): void {
-    if (this.mode() === 'etagere') this.inspectorOpen.set(false);
-    else this.store.select(null);
+    this.inspectorOpen.set(false);
   }
 
   setCustomPeriod(period: Period): void {

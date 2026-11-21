@@ -206,7 +206,7 @@ export class Etagere {
   private lane(team: Team, projects: Project[]): ShelfLane {
     const weeks = this.weeks();
     const cw = this.cw();
-    const selectedId = this.store.selectedId();
+    const selectedIds = this.store.selectedIds();
     const draggingId = this.dnd.drag()?.project.id ?? null;
     const landingId = this.dnd.landing();
     const placed = projects
@@ -244,7 +244,7 @@ export class Etagere {
           cutStart: r.col < 0,
           cutEnd: r.col + d.weeks > weeks,
           labelled: (to - from) * cw >= NAME_MIN_W,
-          selected: selectedId === p.id,
+          selected: selectedIds.has(p.id),
           dragging: draggingId === p.id,
           landing: landingId === p.id,
         };

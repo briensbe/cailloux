@@ -51,8 +51,15 @@ export class PlanningStore {
   /** Colonne d'où partent placements et tassements : la semaine en cours, ramenée dans la fenêtre. */
   private readonly fromCol = computed(() => Math.max(0, this.todayCol()));
 
-  readonly selectedId = signal<string | null>(null);
-  readonly selected = computed(() => this.projects().find((p) => p.id === this.selectedId()) ?? null);
+  readonly selectedIds = signal<ReadonlySet<string>>(new Set());
+  readonly selectedId = computed(() => {
+    const ids = this.selectedIds();
+    return ids.size === 1 ? (ids.values().next().value ?? null) : null;
+  });
+  readonly selected = computed(() => {
+    const id = this.selectedId();
+    return id ? (this.projects().find((p) => p.id === id) ?? null) : null;
+  });
   /** La brique qui vient de tomber dans un vase (déclenche l'animation de chute). */
   readonly justDropped = signal<string | null>(null);
 
@@ -118,7 +125,20 @@ export class PlanningStore {
   }
 
   select(id: string | null): void {
-    this.selectedId.set(id);
+    this.selectedIds.set(id ? new Set([id]) : new Set());
+  }
+
+  toggleSelect(id: string): void {
+    this.selectedIds.update((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  selectMany(ids: readonly string[]): void {
+    this.selectedIds.set(new Set(ids));
   }
 
   // ---------------------------------------------------------------- Fenêtre
@@ -239,7 +259,7 @@ export class PlanningStore {
         row: null,
       };
       this.commit({ ...this.current(), projects: [...this.projects(), project] });
-      this.selectedId.set(project.id);
+      this.select(project.id);
       return;
     }
     const team = this.team(teamId);
@@ -265,7 +285,7 @@ export class PlanningStore {
       row: cell?.row ?? null,
     };
     this.commit({ ...this.current(), window, projects: [...this.projects(), project] });
-    this.selectedId.set(project.id);
+    this.select(project.id);
     if (cell) {
       this.markDropped(project.id);
     } else {
@@ -356,6 +376,94 @@ export class PlanningStore {
     else this.toast.show(`« ${p.name} » ne tient pas dans ce vase : elle attend à côté.`);
   }
 
+  /**
+   * Déplace un lot de projets vers une équipe en une seule transaction annulable (Ctrl+Z).
+   * En mode `tray`, tous rejoignent le bac d'attente de l'équipe ; en mode `place`, les plus gros
+   * cailloux sont posés en premier à la première place libre, et ceux qui ne rentrent pas attendent
+   * dans le bac de l'équipe.
+   */
+  moveProjectsToTeam(ids: readonly string[], teamId: string, mode: 'tray' | 'place'): void {
+    const team = this.team(teamId);
+    if (!team) return;
+    const idSet = new Set(ids);
+    const targets = this.projects().filter((p) => idSet.has(p.id));
+    if (targets.length === 0) return;
+
+    const updates = new Map<string, Project>();
+    let placedCount = 0;
+    let trayCount = 0;
+    let lastPlacedId: string | null = null;
+
+    if (mode === 'tray') {
+      for (const p of targets) {
+        const dims = fitToTeam(p, team.size);
+        updates.set(p.id, { ...p, ...dims, teamId, start: null, row: null });
+        trayCount++;
+      }
+    } else {
+      const sorted = [...targets].sort((a, b) => b.charge - a.charge);
+      const placedRects = [...this.rectsOf(teamId)];
+      const bounds = this.bounds(team);
+      const fromCol = this.fromCol();
+      for (const p of sorted) {
+        const dims = fitToTeam(p, team.size);
+        const occ = new Occupancy(bounds, placedRects);
+        const cell = findFirstFit(dims, occ, fromCol);
+        if (cell) {
+          placedRects.push({ ...cell, ...dims });
+          updates.set(p.id, { ...p, ...dims, teamId, start: this.startAt(cell.col), row: cell.row });
+          placedCount++;
+          lastPlacedId = p.id;
+        } else {
+          updates.set(p.id, { ...p, ...dims, teamId, start: null, row: null });
+          trayCount++;
+        }
+      }
+    }
+
+    this.commit({
+      ...this.current(),
+      projects: this.projects().map((p) => updates.get(p.id) ?? p),
+    });
+    this.select(null);
+
+    if (placedCount === 1 && trayCount === 0 && lastPlacedId) {
+      this.markDropped(lastPlacedId);
+    }
+
+    let message: string;
+    if (mode === 'tray') {
+      message = `${trayCount} ${trayCount > 1 ? 'cailloux déplacés' : 'caillou déplacé'} dans le bac d'attente de ${team.name}.`;
+    } else if (placedCount > 0 && trayCount === 0) {
+      message = `${placedCount} ${placedCount > 1 ? 'cailloux placés' : 'caillou placé'} dans ${team.name}.`;
+    } else if (placedCount > 0 && trayCount > 0) {
+      message = `${placedCount} ${placedCount > 1 ? 'placés' : 'placé'} dans ${team.name}, ${trayCount} en attente faute de place.`;
+    } else {
+      message = `Pas de place dans le vase de ${team.name} : ${trayCount} ${trayCount > 1 ? 'cailloux mis' : 'caillou mis'} en attente.`;
+    }
+    this.toast.show(message, { label: 'Annuler', run: () => this.undo() });
+  }
+
+  /** Remet un lot de projets dans le bac commun (sans équipe ni dates) en une seule transaction annulable. */
+  moveProjectsToCommon(ids: readonly string[]): void {
+    const idSet = new Set(ids);
+    const targets = this.projects().filter((p) => idSet.has(p.id) && p.teamId !== null);
+    if (targets.length === 0) return;
+
+    const targetIds = new Set(targets.map((p) => p.id));
+    this.commit({
+      ...this.current(),
+      projects: this.projects().map((p) => (targetIds.has(p.id) ? { ...p, teamId: null, start: null, row: null } : p)),
+    });
+    this.select(null);
+
+    const n = targets.length;
+    this.toast.show(`${n} ${n > 1 ? 'cailloux remis' : 'caillou remis'} dans le bac commun.`, {
+      label: 'Annuler',
+      run: () => this.undo(),
+    });
+  }
+
   /** Déplacement au clavier, case par case (y compris pour un projet déjà commencé). */
   nudge(id: string, dCol: number, dRow: number): void {
     const p = this.project(id);
@@ -369,7 +477,13 @@ export class PlanningStore {
     const p = this.project(id);
     if (!p) return;
     this.commit({ ...this.current(), projects: this.projects().filter((pr) => pr.id !== id) });
-    if (this.selectedId() === id) this.selectedId.set(null);
+    if (this.selectedIds().has(id)) {
+      this.selectedIds.update((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
     this.toast.show(`« ${p.name} » a été retiré.`, { label: 'Annuler', run: () => this.undo() });
   }
 
@@ -443,7 +557,7 @@ export class PlanningStore {
 
   resetDemo(): void {
     this.commit(demoState());
-    this.selectedId.set(null);
+    this.select(null);
     this.toast.show('Démo rechargée.', { label: 'Annuler', run: () => this.undo() });
   }
 

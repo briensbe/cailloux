@@ -154,7 +154,7 @@
                   @if (b.labelled) {
                     <span class="b-label">{{ b.name }}</span>
                   }
-                  @if (b.selected) {
+                  @if (b.selected && store.selectedId() === b.id) {
                     @if (!b.cutEnd) {
                       <span class="handle handle-e" title="Étirer dans le temps" (pointerdown)="startResize($event, b, l.team, 'e')"></span>
                     }

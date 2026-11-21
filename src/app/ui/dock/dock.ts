@@ -55,6 +55,7 @@ const PILL_H_MAX = 72;
     '[style.height.px]': 'reserved()',
     '(window:dragover)': 'guard($event)',
     '(window:drop)': 'guard($event)',
+    '(document:pointerdown)': 'onDocumentPointerDown($event)',
   },
 })
 export class Dock {
@@ -63,8 +64,27 @@ export class Dock {
   protected readonly dnd = inject(DragService);
   private readonly toast = inject(ToastService);
 
+  private readonly hostEl = inject<ElementRef<HTMLElement>>(ElementRef);
+  private lastAnchorId: string | null = null;
+
   /** Les gros cailloux d'abord. */
   protected readonly projects = computed(() => [...this.store.commonProjects()].sort((a, b) => b.charge - a.charge));
+  protected readonly selectedProjects = computed(() => {
+    const ids = this.store.selectedIds();
+    return this.store.projects().filter((p) => ids.has(p.id));
+  });
+  protected readonly selectedCharge = computed(() => this.selectedProjects().reduce((sum, p) => sum + p.charge, 0));
+  protected readonly multiActive = computed(() => this.selectedProjects().length >= 2);
+  protected readonly hasTeamProjects = computed(() => this.selectedProjects().some((p) => p.teamId !== null));
+  protected readonly teamMenu = signal<'place' | 'tray' | null>(null);
+  protected readonly teamChoices = computed(() => {
+    const period = this.view.period();
+    const needed = this.selectedCharge();
+    return this.store.teams().map((t) => {
+      const fig = periodFigures(t.size, this.store.projectsOf(t.id), period);
+      return { team: t, remaining: fig.remaining, fits: fig.remaining >= needed };
+    });
+  });
   protected readonly waiting = computed(() => {
     const period = this.view.period();
     const teams = this.store.teams().map((t) => periodFigures(t.size, this.store.projectsOf(t.id), period));
@@ -105,8 +125,94 @@ export class Dock {
     };
   }
 
+  protected isSelected(id: string): boolean {
+    return this.store.selectedIds().has(id);
+  }
+
   protected press(event: PointerEvent, p: Project): void {
+    if (event.button !== 0) return;
+    if (event.ctrlKey || event.metaKey) {
+      event.preventDefault();
+      this.toggleWithAnchor(p.id);
+      return;
+    }
+    if (event.shiftKey) {
+      event.preventDefault();
+      this.selectRangeTo(p.id);
+      return;
+    }
+    this.lastAnchorId = p.id;
     this.dnd.press(event, p, 0, true);
+  }
+
+  protected togglePick(event: MouseEvent, p: Project): void {
+    event.stopPropagation();
+    if (event.shiftKey) {
+      this.selectRangeTo(p.id);
+      return;
+    }
+    this.toggleWithAnchor(p.id);
+  }
+
+  protected onDockKeydown(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement;
+    if (target.closest('input, textarea, select')) return;
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') {
+      const ids = this.projects().map((p) => p.id);
+      if (!ids.length) return;
+      event.preventDefault();
+      this.store.selectMany(ids);
+      this.lastAnchorId = ids[0];
+    }
+  }
+
+  protected toggleMenu(kind: 'place' | 'tray'): void {
+    this.teamMenu.update((cur) => (cur === kind ? null : kind));
+  }
+
+  protected moveSelectedTo(teamId: string): void {
+    const mode = this.teamMenu();
+    if (!mode) return;
+    const ids = this.selectedProjects().map((p) => p.id);
+    this.teamMenu.set(null);
+    this.store.moveProjectsToTeam(ids, teamId, mode);
+  }
+
+  protected moveSelectedToCommon(): void {
+    const ids = this.selectedProjects().map((p) => p.id);
+    this.teamMenu.set(null);
+    this.store.moveProjectsToCommon(ids);
+  }
+
+  protected clearSelection(): void {
+    this.teamMenu.set(null);
+    this.store.select(null);
+  }
+
+  protected onDocumentPointerDown(event: PointerEvent): void {
+    if (!this.teamMenu()) return;
+    const bar = this.hostEl.nativeElement.querySelector('.batch-bar');
+    if (bar && !bar.contains(event.target as Node)) {
+      this.teamMenu.set(null);
+    }
+  }
+
+  private toggleWithAnchor(id: string): void {
+    this.store.toggleSelect(id);
+    this.lastAnchorId = id;
+  }
+
+  private selectRangeTo(targetId: string): void {
+    const list = this.projects();
+    const toIdx = list.findIndex((p) => p.id === targetId);
+    if (toIdx === -1) return;
+    const anchorIdx = this.lastAnchorId ? list.findIndex((p) => p.id === this.lastAnchorId) : -1;
+    const fromIdx = anchorIdx === -1 ? 0 : anchorIdx;
+    const [start, end] = fromIdx <= toIdx ? [fromIdx, toIdx] : [toIdx, fromIdx];
+    const merged = new Set(this.store.selectedIds());
+    for (const p of list.slice(start, end + 1)) merged.add(p.id);
+    this.store.selectMany([...merged]);
+    if (!this.lastAnchorId) this.lastAnchorId = list[fromIdx].id;
   }
 
   protected openDetails(p: Project): void {
