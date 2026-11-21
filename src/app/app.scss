@@ -3,12 +3,17 @@
   max-width: 1480px;
   margin: 0 auto;
   padding: 34px 40px 80px;
-  transition: padding-right 0.35s cubic-bezier(0.2, 1, 0.3, 1);
+  transition:
+    padding-right 0.35s cubic-bezier(0.2, 1, 0.3, 1),
+    max-width 0.35s cubic-bezier(0.2, 1, 0.3, 1);
 }
 
 // Le panneau de détail ne doit pas cacher les vases ni le dock : on leur fait de la place.
+// On élargit aussi max-width d'autant (380 - 40 = 340px) pour conserver la largeur utile (1400px)
+// quand l'écran le permet, au lieu de rétrécir les vases et de laisser une marge vide entre eux et l'inspecteur.
 :host(.with-inspector) {
   @media (min-width: 1100px) {
+    max-width: 1820px;
     padding-right: 380px;
     --dock-right: 372px;
   }

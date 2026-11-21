@@ -1,5 +1,16 @@
 // « Atelier de pierre » : papier calcaire chaud, verre, pierres polies et eau.
 
+@use '@fontsource-variable/bricolage-grotesque/standard.css' as *;
+@use '@fontsource/instrument-sans/400.css' as *;
+@use '@fontsource/instrument-sans/500.css' as *;
+@use '@fontsource/instrument-sans/600.css' as *;
+@use '@fontsource/instrument-sans/700.css' as *;
+@use '@fontsource/instrument-sans/400-italic.css' as *;
+@use '@fontsource/jetbrains-mono/400.css' as *;
+@use '@fontsource/jetbrains-mono/500.css' as *;
+@use '@fontsource/jetbrains-mono/600.css' as *;
+@use '@fontsource/jetbrains-mono/700.css' as *;
+
 :root {
   --paper: #efe9de;
   --ink: #1f2a2f;
@@ -14,7 +25,7 @@
   --water-deep: #1c5f86;
   --accent: #c8643b;
 
-  --font-display: 'Bricolage Grotesque', 'Trebuchet MS', sans-serif;
+  --font-display: 'Bricolage Grotesque Variable', 'Trebuchet MS', sans-serif;
   --font-body: 'Instrument Sans', 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'Cascadia Mono', monospace;
 
