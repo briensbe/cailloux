@@ -5,7 +5,8 @@
 .dock {
   position: fixed;
   z-index: 40;
-  right: 16px;
+  // L'inspecteur occupe la droite de l'écran : le dock lit --dock-right héritée de l'hôte.
+  right: var(--dock-right, 16px);
   bottom: 12px;
   left: 16px;
   border-radius: 20px;
@@ -23,13 +24,6 @@
     box-shadow:
       0 0 0 2px var(--water),
       0 -14px 34px -22px rgb(40 30 20 / 0.55);
-  }
-}
-
-// L'inspecteur occupe la droite de l'écran : le dock s'arrête avant lui.
-:host-context(.with-inspector) .dock {
-  @media (min-width: 1100px) {
-    right: 372px;
   }
 }
 

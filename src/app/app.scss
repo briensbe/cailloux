@@ -6,10 +6,11 @@
   transition: padding-right 0.35s cubic-bezier(0.2, 1, 0.3, 1);
 }
 
-// Le panneau de détail ne doit pas cacher les vases : on leur fait de la place.
+// Le panneau de détail ne doit pas cacher les vases ni le dock : on leur fait de la place.
 :host(.with-inspector) {
   @media (min-width: 1100px) {
     padding-right: 380px;
+    --dock-right: 372px;
   }
 }
 
