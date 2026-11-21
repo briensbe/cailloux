@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, linkedSignal } from '@angular/core';
 import { footprint, weeksFor, withCharge, withPersons, withWeeks } from '../../domain/capacity';
 import { LoadMode, MAX_TEAM_SIZE, StoneColor, STONE_COLORS, STONES, stoneKind } from '../../domain/model';
 import { addDays, formatShort, isoWeek, parseIsoDate } from '../../domain/weeks';
@@ -20,6 +20,10 @@ export class Inspector {
   protected readonly store = inject(PlanningStore);
   protected readonly view = inject(ViewService);
   protected readonly project = this.store.selected;
+  protected readonly titleExpanded = linkedSignal(() => {
+    this.project()?.id;
+    return false;
+  });
   protected readonly colors = STONE_COLORS;
   protected readonly stones = STONES;
 
@@ -57,8 +61,10 @@ export class Inspector {
   });
 
   protected rename(event: Event): void {
-    const name = (event.target as HTMLInputElement).value.trim();
+    const target = event.target as HTMLTextAreaElement;
+    const name = target.value.trim();
     if (name) this.store.updateProject(this.project()!.id, { name });
+    else target.value = this.project()!.name;
   }
 
   protected setCharge(event: Event): void {

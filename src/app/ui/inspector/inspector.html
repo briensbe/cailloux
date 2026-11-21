@@ -7,14 +7,32 @@
       </button>
     </header>
 
-    <input
-      class="name"
-      [value]="p.name"
-      (change)="rename($event)"
-      (keydown.enter)="$any($event.target).blur()"
-      aria-label="Nom du projet"
-      spellcheck="false"
-    />
+    <div class="name-wrap">
+      @if (titleExpanded()) {
+        <textarea
+          class="name"
+          rows="2"
+          [value]="p.name"
+          (change)="rename($event)"
+          (keydown.enter)="$event.preventDefault(); $any($event.target).blur()"
+          aria-label="Nom du projet"
+          spellcheck="false"
+        ></textarea>
+        <button type="button" class="name-toggle" (click)="titleExpanded.set(false)">
+          Réduire
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="name name-collapsed"
+          (click)="titleExpanded.set(true)"
+          [attr.aria-expanded]="false"
+          title="Cliquer pour voir le titre en entier ou le modifier"
+        >
+          <span>{{ p.name }}</span>
+        </button>
+      }
+    </div>
 
     <section class="figures">
       <label class="row">
