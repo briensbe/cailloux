@@ -3,8 +3,7 @@
   class="dock"
   [class.open]="view.dockOpen()"
   [class.active]="active() || fileOver()"
-  [class.read-only]="readOnly()"
-  [attr.data-drop-kind]="readOnly() ? null : 'common'"
+  data-drop-kind="common"
   aria-label="Bac commun"
   (dragover)="onFileOver($event)"
   (dragleave)="onFileLeave($event)"
@@ -34,14 +33,10 @@
       </small>
     }
     <span class="spacer"></span>
-    @if (readOnly()) {
-      <span class="ro">Lecture seule</span>
-    }
     <input #picker type="file" accept=".xlsx,.json" hidden (change)="onFilePicked($event)" />
     <button
       type="button"
       class="btn"
-      [disabled]="readOnly()"
       (click)="picker.click()"
       title="Importer une liste de projets (Excel .xlsx) ou un export de planification (.json), ou déposer le fichier ici"
     >
@@ -50,7 +45,6 @@
     <button
       type="button"
       class="btn btn-primary"
-      [disabled]="readOnly()"
       (click)="view.newProjectFor.set({ teamId: null })"
       title="Nouveau projet, qu'aucune équipe n'a encore pris"
     >
@@ -64,7 +58,7 @@
         @let m = miniSize(p);
         <app-brick
           class="mini pill"
-          [tabindex]="readOnly() ? -1 : 0"
+          tabindex="0"
           [project]="p"
           [dims]="p"
           [selected]="store.selectedId() === p.id"
@@ -72,15 +66,12 @@
           [style.height.px]="m.h"
           [class.is-dragging]="draggingId() === p.id"
           (pointerdown)="press($event, p)"
-          (keydown.enter)="select(p)"
+          (dblclick)="openDetails(p)"
+          (keydown.enter)="openDetails(p)"
         />
       } @empty {
         <span class="hint">
-          @if (readOnly()) {
-            Aucun projet en attente d'arbitrage.
-          } @else {
-            Glissez une brique ici pour la remettre en commun, créez un caillou qu'aucune équipe n'a encore pris, ou déposez un fichier Excel de projets.
-          }
+          Glissez une brique ici pour la remettre en commun, créez un caillou qu'aucune équipe n'a encore pris, ou déposez un fichier Excel de projets.
         </span>
       }
     </div>

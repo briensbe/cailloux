@@ -1,6 +1,6 @@
 @let pc = periodCols();
 @let t = totals();
-<section class="shelf" aria-label="Étagère : toutes les équipes, en lecture seule">
+<section class="shelf" aria-label="Étagère : toutes les équipes">
   <!-- Bande des personnes libres, toutes équipes : au-dessus de la règle, pour laisser les vases collés à elle. -->
   <div class="row band">
     <div class="head">
@@ -106,21 +106,41 @@
         }
         @for (l of lanes(); track l.team.id) {
           <div class="lane" [style.height.px]="l.laneH">
-            <div class="mini" [style.height.px]="l.vaseH + l.overH">
+            <div class="mini" [style.height.px]="l.vaseH + l.overH" data-drop-kind="grid" [attr.data-drop-team]="l.team.id">
               <div
                 class="glass"
                 [style.height.px]="l.vaseH"
                 [style.background-size]="cw() + 'px ' + rowH + 'px'"
               ></div>
+              <div
+                class="shelf-grid"
+                data-grid
+                [style.height.px]="l.vaseH"
+                (pointerdown)="onGridPointerDown($event)"
+              ></div>
               @if (l.overH) {
                 <div class="over-zone" [style.bottom.px]="l.vaseH" [style.height.px]="l.overH"></div>
+              }
+              @if (ghostFor(l.team.id); as g) {
+                <div
+                  class="ghost"
+                  [style.left.px]="g.left"
+                  [style.bottom.px]="g.bottom"
+                  [style.width.px]="g.width"
+                  [style.height.px]="g.height"
+                  [style.--stone]="g.stone"
+                ></div>
               }
               @for (b of l.bricks; track b.id) {
                 <div
                   class="b"
+                  [attr.data-brick-id]="b.id"
                   [class.over]="b.overflow"
                   [class.cut-s]="b.cutStart"
                   [class.cut-e]="b.cutEnd"
+                  [class.is-selected]="b.selected"
+                  [class.is-dragging]="b.dragging"
+                  [class.is-landing]="b.landing"
                   [title]="b.title"
                   [style.left.px]="b.left"
                   [style.width.px]="b.width"
@@ -128,9 +148,20 @@
                   [style.height.px]="b.height"
                   [style.background]="b.base"
                   [style.color]="b.ink"
+                  (pointerdown)="pressBrick($event, b)"
+                  (dblclick)="openDetails(b)"
                 >
                   @if (b.labelled) {
-                    {{ b.name }}
+                    <span class="b-label">{{ b.name }}</span>
+                  }
+                  @if (b.selected) {
+                    @if (!b.cutEnd) {
+                      <span class="handle handle-e" title="Étirer dans le temps" (pointerdown)="startResize($event, b, l.team, 'e')"></span>
+                    }
+                    <span class="handle handle-n" title="Changer le nombre de personnes" (pointerdown)="startResize($event, b, l.team, 'n')"></span>
+                    @if (b.project.mode === 'free' && !b.cutEnd) {
+                      <span class="handle handle-ne" title="Étirer librement" (pointerdown)="startResize($event, b, l.team, 'ne')"></span>
+                    }
                   }
                 </div>
               }

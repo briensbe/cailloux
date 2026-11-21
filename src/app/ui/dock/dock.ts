@@ -63,7 +63,6 @@ export class Dock {
   protected readonly dnd = inject(DragService);
   private readonly toast = inject(ToastService);
 
-  protected readonly readOnly = computed(() => this.view.mode() === 'etagere');
   /** Les gros cailloux d'abord. */
   protected readonly projects = computed(() => [...this.store.commonProjects()].sort((a, b) => b.charge - a.charge));
   protected readonly waiting = computed(() => {
@@ -107,18 +106,17 @@ export class Dock {
   }
 
   protected press(event: PointerEvent, p: Project): void {
-    if (this.readOnly()) return;
     this.dnd.press(event, p, 0, true);
   }
 
-  protected select(p: Project): void {
-    if (!this.readOnly()) this.store.select(p.id);
+  protected openDetails(p: Project): void {
+    this.view.openInspector(p.id);
   }
 
   // ---------------------------------------------------------------- Import de fichier
 
   protected onFileOver(event: DragEvent): void {
-    if (this.readOnly() || !hasFiles(event)) return;
+    if (!hasFiles(event)) return;
     // Sans preventDefault(), le navigateur refuse le dépôt.
     event.preventDefault();
     event.dataTransfer!.dropEffect = 'copy';
@@ -133,7 +131,7 @@ export class Dock {
 
   protected onFileDrop(event: DragEvent): void {
     this.fileOver.set(false);
-    if (this.readOnly() || !hasFiles(event)) return;
+    if (!hasFiles(event)) return;
     event.preventDefault();
     const file = event.dataTransfer!.files[0];
     if (file) void this.open(file);

@@ -91,3 +91,21 @@ export function fitToTeam(d: Dims, teamSize: number): Dims {
   if (d.persons <= teamSize) return { weeks: d.weeks, persons: d.persons, charge: d.charge };
   return initialDims(d.charge, Math.max(1, teamSize));
 }
+
+/** Avance pas à pas de `from` vers `to` et garde la dernière forme qui satisfait `fits`. */
+export function walkDims(
+  initial: Dims,
+  from: number,
+  to: number,
+  make: (value: number) => Dims,
+  fits: (d: Dims) => boolean,
+): Dims {
+  let best = initial;
+  const step = Math.sign(to - from);
+  for (let v = from + step; step !== 0 && (step > 0 ? v <= to : v >= to); v += step) {
+    const d = make(v);
+    if (!fits(d)) break;
+    best = d;
+  }
+  return best;
+}

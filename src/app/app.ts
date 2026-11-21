@@ -37,7 +37,7 @@ import { Toasts } from './ui/toasts';
     // Dimensions d'une case, exposées en variables CSS pour dessiner le quadrillage des vases.
     '[style.--cell-w]': "view.cellW() + 'px'",
     '[style.--cell-h]': "cellH + 'px'",
-    '[class.with-inspector]': 'store.selected() !== null',
+    '[class.with-inspector]': 'view.showInspector()',
     // Sous la barre d'outils collante : là où la règle du temps de l'Étagère se colle à son tour.
     '[style.--sticky-top]': "toolbarBottom() + 'px'",
     '(document:keydown)': 'onKey($event)',
@@ -134,8 +134,6 @@ export class App {
     const target = e.target as HTMLElement;
     if (target.closest('input, textarea, select, dialog')) return;
     const key = e.key.toLowerCase();
-    // L'Étagère est en lecture seule : une annulation y ferait bouger des briques.
-    if (this.view.mode() === 'etagere') return;
     if ((e.ctrlKey || e.metaKey) && (key === 'z' || key === 'y')) {
       e.preventDefault();
       if (key === 'y' || e.shiftKey) this.store.redo();
@@ -143,11 +141,17 @@ export class App {
       return;
     }
     if (e.key === 'Escape') {
+      this.view.inspectorOpen.set(false);
       this.store.select(null);
       return;
     }
     const id = this.store.selectedId();
     if (!id) return;
+    if (e.key === 'Enter' && this.view.mode() === 'etagere') {
+      e.preventDefault();
+      this.view.openInspector(id);
+      return;
+    }
     const arrows: Record<string, [number, number]> = {
       ArrowLeft: [-1, 0],
       ArrowRight: [1, 0],

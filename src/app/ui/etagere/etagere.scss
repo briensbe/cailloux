@@ -233,26 +233,52 @@ $head-w: 220px;
     linear-gradient(to top, var(--grid-line) 1px, transparent 1px);
 }
 
+.shelf-grid {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.ghost {
+  position: absolute;
+  z-index: 2;
+  box-sizing: border-box;
+  border: 2px dashed var(--stone);
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--stone) 18%, transparent);
+  pointer-events: none;
+}
+
 .over-zone {
   position: absolute;
   right: 0;
   left: 0;
   border-bottom: 1.5px dashed #c0392b;
   background: repeating-linear-gradient(-45deg, rgb(200 60 40 / 0.08) 0 4px, transparent 4px 8px);
+  pointer-events: none;
 }
 
 .b {
   position: absolute;
   z-index: 2;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
   padding: 0 4px;
   border: 1px solid rgb(255 255 255 / 0.55);
   border-radius: 3px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  cursor: grab;
+  user-select: none;
   // Tient dans une ligne d'une personne (16 px, moins les bordures).
   font: 600 10px/13px var(--font-body);
+  .b-label {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    pointer-events: none;
+  }
   &.cut-s {
     border-left: 2px dashed rgb(255 255 255 / 0.9);
     border-radius: 0 3px 3px 0;
@@ -265,6 +291,49 @@ $head-w: 220px;
     outline: 2px solid #c0392b;
     outline-offset: -1px;
   }
+  &.is-selected {
+    z-index: 4;
+    box-shadow: 0 0 0 2px var(--ink);
+  }
+  &.is-dragging {
+    opacity: 0.25;
+  }
+  &.is-landing {
+    transition: none;
+  }
+}
+
+.handle {
+  position: absolute;
+  z-index: 5;
+  touch-action: none;
+}
+
+.handle-e {
+  top: 2px;
+  right: -3px;
+  bottom: 2px;
+  width: 6px;
+  cursor: ew-resize;
+}
+
+.handle-n {
+  top: -3px;
+  right: 4px;
+  left: 4px;
+  height: 6px;
+  cursor: ns-resize;
+}
+
+.handle-ne {
+  top: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 0 1.5px #fff;
+  cursor: nesw-resize;
 }
 
 .chip {

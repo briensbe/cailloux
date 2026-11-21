@@ -1,8 +1,8 @@
-@if (project(); as p) {
+@if (view.showInspector() && project(); as p) {
   <aside class="panel" [style.--stone]="stones[p.color].base" aria-label="Détail du projet">
     <header class="top">
       <span class="kind"><i></i>{{ kind() }}</span>
-      <button type="button" class="btn btn-icon" (click)="store.select(null)" aria-label="Fermer">
+      <button type="button" class="btn btn-icon" (click)="view.closeInspector()" aria-label="Fermer">
         <app-icon name="x" />
       </button>
     </header>

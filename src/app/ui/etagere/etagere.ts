@@ -1,17 +1,17 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { Dims, freeResize, walkDims, withPersons, withWeeks } from '../../domain/capacity';
+import { Rect } from '../../domain/geometry';
 import { Project, STONES, Team } from '../../domain/model';
 import { PeriodFigures, periodFigures, sumFigures } from '../../domain/period';
 import { freePersonsPerWeek, isOverflowing, outsideSide, toWindowRect } from '../../domain/window';
 import { weekLabels, weeksBetween } from '../../domain/weeks';
+import { DragService } from '../../state/drag.service';
 import { PlanningStore } from '../../state/planning.store';
-import { ViewService } from '../../state/view.service';
+import { SHELF_ROW_H, ViewService } from '../../state/view.service';
+import { ResizeHandle } from '../brick/brick';
 
-/**
- * Hauteur d'une personne dans un vase miniature (44 px dans le mode Vases) : assez pour lire
- * le nom d'un projet d'une seule personne.
- */
-export const SHELF_ROW_H = 16;
+export { SHELF_ROW_H };
 /** Largeur minimale d'une brique pour y écrire son nom (tronqué par « … » au besoin). */
 const NAME_MIN_W = 28;
 /** Hauteur minimale d'une ligne de l'Étagère, pour que l'en-tête de l'équipe tienne : base, plus une ligne par pastille. */
@@ -21,6 +21,9 @@ const LANE_PAD = 18;
 
 interface ShelfBrick {
   id: string;
+  project: Project;
+  rect: Rect;
+  hiddenWeeks: number;
   name: string;
   title: string;
   base: string;
@@ -34,6 +37,9 @@ interface ShelfBrick {
   cutEnd: boolean;
   /** Assez large pour y écrire le nom. */
   labelled: boolean;
+  selected: boolean;
+  dragging: boolean;
+  landing: boolean;
 }
 
 interface ShelfLane {
@@ -53,7 +59,7 @@ interface ShelfLane {
 
 /**
  * L'Étagère : tous les vases en miniature sous une même règle du temps, pour comparer les équipes
- * d'un coup d'œil (spec `etagere`). Lecture seule : aucun geste, aucune action du store.
+ * d'un coup d'œil et y ajuster directement les projets (spec `etagere`).
  *
  * Mise en page : chaque rangée (bande des personnes libres, règle, vases) a une colonne d'en-têtes
  * et une colonne de temps. Seule la colonne de temps des vases défile horizontalement ; la bande
@@ -70,7 +76,9 @@ interface ShelfLane {
 export class Etagere {
   protected readonly store = inject(PlanningStore);
   protected readonly view = inject(ViewService);
+  private readonly dnd = inject(DragService);
   protected readonly rowH = SHELF_ROW_H;
+  protected readonly resizing = signal<{ id: string; dims: Dims } | null>(null);
 
   protected readonly cw = this.view.shelfCellW;
   protected readonly weeks = computed(() => this.store.window().weeks);
@@ -116,14 +124,96 @@ export class Etagere {
     for (const el of followers) el.scrollLeft = left;
   }
 
+  protected ghostFor(teamId: string): { left: number; bottom: number; width: number; height: number; stone: string } | null {
+    const d = this.dnd.drag();
+    const t = d?.target;
+    if (!d || t?.kind !== 'grid' || t.teamId !== teamId) return null;
+    const cw = this.cw();
+    const from = Math.max(0, t.cell.col);
+    const to = Math.min(this.weeks(), t.cell.col + t.dims.weeks);
+    return {
+      left: from * cw,
+      bottom: t.cell.row * SHELF_ROW_H,
+      width: (to - from) * cw,
+      height: t.dims.persons * SHELF_ROW_H,
+      stone: STONES[d.project.color].base,
+    };
+  }
+
+  protected onGridPointerDown(event: PointerEvent): void {
+    if (event.target !== event.currentTarget) return;
+    this.view.inspectorOpen.set(false);
+    this.store.select(null);
+  }
+
+  protected pressBrick(event: PointerEvent, b: ShelfBrick): void {
+    this.dnd.press(event, b.project, b.hiddenWeeks);
+  }
+
+  protected openDetails(b: ShelfBrick): void {
+    this.view.openInspector(b.id);
+  }
+
+  protected startResize(event: PointerEvent, b: ShelfBrick, team: Team, handle: ResizeHandle): void {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const handleEl = event.target as HTMLElement;
+    handleEl.setPointerCapture(event.pointerId);
+    this.store.select(b.id);
+
+    const p = b.project;
+    const r = b.rect;
+    const maxPersons = team.size;
+    const fits = (d: Dims) => this.store.canOccupy(team.id, p.id, { ...r, weeks: d.weeks, persons: d.persons });
+    const start = { x: event.clientX, y: event.clientY };
+    const base: Dims = { weeks: p.weeks, persons: p.persons, charge: p.charge };
+    this.resizing.set({ id: p.id, dims: base });
+
+    const move = (e: PointerEvent) => {
+      const dWeeks = Math.round((e.clientX - start.x) / this.cw());
+      const dPersons = Math.round((start.y - e.clientY) / SHELF_ROW_H);
+      let dims = base;
+      if (handle === 'e') {
+        dims = walkDims(base, p.weeks, p.weeks + dWeeks, (w) => withWeeks(p, w, maxPersons), fits);
+      } else if (handle === 'n') {
+        dims = walkDims(base, p.persons, p.persons + dPersons, (h) => withPersons(p, h, maxPersons), fits);
+      } else {
+        const wide = walkDims(base, p.weeks, p.weeks + dWeeks, (w) => freeResize(p, w, p.persons), fits);
+        const top = Math.min(maxPersons, p.persons + dPersons);
+        dims = walkDims(wide, p.persons, top, (h) => freeResize(p, wide.weeks, Math.max(1, h)), fits);
+      }
+      this.resizing.set({ id: p.id, dims });
+    };
+    const end = () => {
+      handleEl.removeEventListener('pointermove', move);
+      handleEl.removeEventListener('pointerup', end);
+      handleEl.removeEventListener('pointercancel', end);
+      const final = this.resizing();
+      this.resizing.set(null);
+      if (final) this.store.resizeProject(p.id, final.dims);
+    };
+    handleEl.addEventListener('pointermove', move);
+    handleEl.addEventListener('pointerup', end);
+    handleEl.addEventListener('pointercancel', end);
+  }
+
+  private dimsOf(p: Project): Dims {
+    const r = this.resizing();
+    return r?.id === p.id ? r.dims : p;
+  }
+
   private lane(team: Team, projects: Project[]): ShelfLane {
     const weeks = this.weeks();
     const cw = this.cw();
+    const selectedId = this.store.selectedId();
+    const draggingId = this.dnd.drag()?.project.id ?? null;
+    const landingId = this.dnd.landing();
     const placed = projects
       .map((p) => ({ p, r: toWindowRect(p, this.store.windowStart()) }))
       .filter((x): x is { p: Project; r: NonNullable<typeof x.r> } => x.r !== null);
     const visible = placed.filter(({ r }) => outsideSide(r, weeks) === null);
-    const headroom = Math.max(0, ...visible.map(({ r }) => r.row + r.persons - team.size));
+    const headroom = Math.max(0, ...visible.map(({ p, r }) => r.row + this.dimsOf(p).persons - team.size));
     const vaseH = team.size * SHELF_ROW_H;
     const overH = headroom * SHELF_ROW_H;
     const waitingCount = projects.filter((p) => p.start === null).length;
@@ -134,22 +224,29 @@ export class Etagere {
       figures: periodFigures(team.size, projects, this.view.period()),
       waitingCount,
       bricks: visible.map(({ p, r }) => {
+        const d = this.dimsOf(p);
         const from = Math.max(0, r.col);
-        const to = Math.min(weeks, r.col + r.weeks);
+        const to = Math.min(weeks, r.col + d.weeks);
         return {
           id: p.id,
+          project: p,
+          rect: r,
+          hiddenWeeks: Math.max(0, -r.col),
           name: p.name,
-          title: `${p.name} — ${p.charge} j/h · ${p.persons} pers. × ${p.weeks} sem.`,
+          title: `${p.name} — ${d.charge} j/h · ${d.persons} pers. × ${d.weeks} sem.`,
           base: STONES[p.color].base,
           ink: STONES[p.color].ink,
           left: from * cw,
           width: (to - from) * cw,
           bottom: r.row * SHELF_ROW_H,
-          height: r.persons * SHELF_ROW_H,
-          overflow: isOverflowing(r, team.size),
+          height: d.persons * SHELF_ROW_H,
+          overflow: isOverflowing({ ...r, weeks: d.weeks, persons: d.persons }, team.size),
           cutStart: r.col < 0,
-          cutEnd: r.col + r.weeks > weeks,
+          cutEnd: r.col + d.weeks > weeks,
           labelled: (to - from) * cw >= NAME_MIN_W,
+          selected: selectedId === p.id,
+          dragging: draggingId === p.id,
+          landing: landingId === p.id,
         };
       }),
       before: placed.filter(({ r }) => outsideSide(r, weeks) === 'before').length,

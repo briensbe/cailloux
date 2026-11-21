@@ -1,6 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import { Dims, freeResize, withPersons, withWeeks } from '../../domain/capacity';
+import { Dims, freeResize, walkDims, withPersons, withWeeks } from '../../domain/capacity';
 import { largestFreeRect, Occupancy, Rect } from '../../domain/geometry';
 import { MAX_TEAM_SIZE, Project, STONES, Team } from '../../domain/model';
 import { periodFigures, periodOccupancy } from '../../domain/period';
@@ -254,13 +254,13 @@ export class Reservoir {
       const dPersons = Math.round((start.y - e.clientY) / CELL_H);
       let dims = base;
       if (handle === 'e') {
-        dims = walk(base, p.weeks, p.weeks + dWeeks, (w) => withWeeks(p, w, maxPersons), fits);
+        dims = walkDims(base, p.weeks, p.weeks + dWeeks, (w) => withWeeks(p, w, maxPersons), fits);
       } else if (handle === 'n') {
-        dims = walk(base, p.persons, p.persons + dPersons, (h) => withPersons(p, h, maxPersons), fits);
+        dims = walkDims(base, p.persons, p.persons + dPersons, (h) => withPersons(p, h, maxPersons), fits);
       } else {
-        const wide = walk(base, p.weeks, p.weeks + dWeeks, (w) => freeResize(p, w, p.persons), fits);
+        const wide = walkDims(base, p.weeks, p.weeks + dWeeks, (w) => freeResize(p, w, p.persons), fits);
         const top = Math.min(maxPersons, p.persons + dPersons);
-        dims = walk(wide, p.persons, top, (h) => freeResize(p, wide.weeks, Math.max(1, h)), fits);
+        dims = walkDims(wide, p.persons, top, (h) => freeResize(p, wide.weeks, Math.max(1, h)), fits);
       }
       this.resizing.set({ id: p.id, dims });
     };
@@ -276,22 +276,4 @@ export class Reservoir {
     handleEl.addEventListener('pointerup', end);
     handleEl.addEventListener('pointercancel', end);
   }
-}
-
-/** Avance pas à pas de `from` vers `to` et garde la dernière forme qui tient dans le vase. */
-function walk(
-  initial: Dims,
-  from: number,
-  to: number,
-  make: (value: number) => Dims,
-  fits: (d: Dims) => boolean,
-): Dims {
-  let best = initial;
-  const step = Math.sign(to - from);
-  for (let v = from + step; step !== 0 && (step > 0 ? v <= to : v >= to); v += step) {
-    const d = make(v);
-    if (!fits(d)) break;
-    best = d;
-  }
-  return best;
 }

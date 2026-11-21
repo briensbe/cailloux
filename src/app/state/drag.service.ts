@@ -3,7 +3,7 @@ import { Dims, fitToTeam } from '../domain/capacity';
 import { Cell, findNearestFree } from '../domain/geometry';
 import { Project } from '../domain/model';
 import { PlanningStore } from './planning.store';
-import { CELL_H, ViewService } from './view.service';
+import { ViewService } from './view.service';
 
 /**
  * Où la brique atterrira : une case d'un vase (avec la forme qu'elle y prendra, recalée à l'effectif
@@ -63,13 +63,14 @@ export class DragService {
         if (Math.hypot(e.clientX - start.x, e.clientY - start.y) < DRAG_THRESHOLD_PX) return;
         started = true;
         document.body.classList.add('is-dragging');
-        // Les briques du bac sont en miniature : on ramène le point de prise à la taille réelle.
+        // Les briques du bac sont en miniature : on ramène le point de prise à la taille de la vue active.
         // Une brique coupée à gauche n'en montre que la fin : on rajoute la partie cachée.
-        const cellW = this.view.cellW();
+        const cellW = this.view.activeCellW();
+        const cellH = this.view.activeCellH();
         const grab = mini
           ? {
               x: ((start.x - box.left) / box.width) * project.weeks * cellW,
-              y: ((start.y - box.top) / box.height) * project.persons * CELL_H,
+              y: ((start.y - box.top) / box.height) * project.persons * cellH,
             }
           : { x: start.x - box.left + hiddenWeeks * cellW, y: start.y - box.top };
         this.drag.set({ project, grab, pointer: start, target: null });
@@ -120,12 +121,14 @@ export class DragService {
     const { project: p, grab } = d;
     // Dans un vase trop étroit, la brique y entre ramenée à l'effectif : on cherche une place pour cette forme-là.
     const dims = fitToTeam(p, team.size);
+    const cellW = this.view.activeCellW();
+    const cellH = this.view.activeCellH();
     const left = pointer.x - grab.x;
-    const bottom = pointer.y - grab.y + p.persons * CELL_H;
+    const bottom = pointer.y - grab.y + p.persons * cellH;
     // Les lignes se comptent depuis le fond du vase : on part du bas de la grille.
     const desired = {
-      col: Math.round((left - box.left) / this.view.cellW()),
-      row: Math.round((box.bottom - bottom) / CELL_H),
+      col: Math.round((left - box.left) / cellW),
+      row: Math.round((box.bottom - bottom) / cellH),
     };
     // Un projet déjà commencé peut garder une partie avant le bord gauche : si la place visée
     // est libre, on la prend telle quelle (l'aimant, lui, ne propose que des places visibles).

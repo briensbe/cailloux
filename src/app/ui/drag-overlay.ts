@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { DragService } from '../state/drag.service';
-import { CELL_H, ViewService } from '../state/view.service';
+import { ViewService } from '../state/view.service';
 import { Brick } from './brick/brick';
 
 /**
@@ -21,8 +21,8 @@ import { Brick } from './brick/brick';
         [dims]="d.project"
         [style.left.px]="d.pointer.x - d.grab.x"
         [style.top.px]="d.pointer.y - d.grab.y"
-        [style.width.px]="d.project.weeks * view.cellW()"
-        [style.height.px]="d.project.persons * cellH"
+        [style.width.px]="d.project.weeks * view.activeCellW()"
+        [style.height.px]="d.project.persons * view.activeCellH()"
       />
     }
   `,
@@ -38,5 +38,4 @@ import { Brick } from './brick/brick';
 export class DragOverlay {
   protected readonly dnd = inject(DragService);
   protected readonly view = inject(ViewService);
-  protected readonly cellH = CELL_H;
 }

@@ -6,6 +6,8 @@ import { PlanningStore } from './planning.store';
 
 /** Hauteur d'une ligne du vase (une personne), en pixels. */
 export const CELL_H = 44;
+/** Hauteur d'une ligne miniature sur l'Étagère (une personne), en pixels. */
+export const SHELF_ROW_H = 16;
 
 export const ZOOM_MIN = 12;
 export const ZOOM_MAX = 110;
@@ -82,7 +84,12 @@ export class ViewService {
 
   /** Zoom et « tout voir » du mode affiché : c'est ce que pilote la barre d'outils. */
   readonly activeCellW = computed(() => (this.mode() === 'etagere' ? this.shelfCellW() : this.cellW()));
+  readonly activeCellH = computed(() => (this.mode() === 'etagere' ? SHELF_ROW_H : CELL_H));
   readonly activeFit = computed(() => (this.mode() === 'etagere' ? this.shelfFit() : this.fit()));
+
+  /** Ouverture explicite du panneau Inspecteur en mode Étagère (un simple clic sélectionne sans l'ouvrir). */
+  readonly inspectorOpen = signal(false);
+  readonly showInspector = computed(() => this.store.selected() !== null && (this.mode() === 'vases' || this.inspectorOpen()));
 
   readonly periodChoice = signal<PeriodPreset | 'custom'>(this.stored.period);
   private readonly custom = signal<Period | null>(this.stored.custom);
@@ -158,8 +165,9 @@ export class ViewService {
     else this.fit.update((v) => !v);
   }
 
-  /** L'Étagère est en lecture seule : y entrer désélectionne la brique (ce qui ferme l'inspecteur). */
+  /** Passer d'un mode à l'autre referme les dialogues et l'Inspecteur. */
   setMode(mode: ViewMode): void {
+    this.inspectorOpen.set(false);
     if (mode === 'etagere') {
       this.store.select(null);
       this.newProjectFor.set(null);
@@ -168,6 +176,16 @@ export class ViewService {
       this.confirmDeleteProjectId.set(null);
     }
     this.mode.set(mode);
+  }
+
+  openInspector(id: string): void {
+    this.store.select(id);
+    this.inspectorOpen.set(true);
+  }
+
+  closeInspector(): void {
+    if (this.mode() === 'etagere') this.inspectorOpen.set(false);
+    else this.store.select(null);
   }
 
   setCustomPeriod(period: Period): void {
