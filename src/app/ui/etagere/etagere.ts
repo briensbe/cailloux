@@ -124,20 +124,25 @@ export class Etagere {
     for (const el of followers) el.scrollLeft = left;
   }
 
-  protected ghostFor(teamId: string): { left: number; bottom: number; width: number; height: number; stone: string } | null {
+  protected ghostsFor(teamId: string): { left: number; bottom: number; width: number; height: number; stone: string }[] {
     const d = this.dnd.drag();
     const t = d?.target;
-    if (!d || t?.kind !== 'grid' || t.teamId !== teamId) return null;
+    if (!d || t?.kind !== 'grid' || t.teamId !== teamId) return [];
     const cw = this.cw();
-    const from = Math.max(0, t.cell.col);
-    const to = Math.min(this.weeks(), t.cell.col + t.dims.weeks);
-    return {
-      left: from * cw,
-      bottom: t.cell.row * SHELF_ROW_H,
-      width: (to - from) * cw,
-      height: t.dims.persons * SHELF_ROW_H,
-      stone: STONES[d.project.color].base,
-    };
+    const weeks = this.weeks();
+    return t.placements
+      .filter((pl): pl is { project: Project; cell: NonNullable<typeof pl.cell>; dims: Dims } => pl.cell !== null)
+      .map((pl) => {
+        const from = Math.max(0, pl.cell.col);
+        const to = Math.min(weeks, pl.cell.col + pl.dims.weeks);
+        return {
+          left: from * cw,
+          bottom: pl.cell.row * SHELF_ROW_H,
+          width: (to - from) * cw,
+          height: pl.dims.persons * SHELF_ROW_H,
+          stone: STONES[pl.project.color].base,
+        };
+      });
   }
 
   protected onGridPointerDown(event: PointerEvent): void {
@@ -207,7 +212,7 @@ export class Etagere {
     const weeks = this.weeks();
     const cw = this.cw();
     const selectedIds = this.store.selectedIds();
-    const draggingId = this.dnd.drag()?.project.id ?? null;
+    const draggingIds = new Set(this.dnd.drag()?.projects.map((p) => p.id) ?? []);
     const landingId = this.dnd.landing();
     const placed = projects
       .map((p) => ({ p, r: toWindowRect(p, this.store.windowStart()) }))
@@ -245,7 +250,7 @@ export class Etagere {
           cutEnd: r.col + d.weeks > weeks,
           labelled: (to - from) * cw >= NAME_MIN_W,
           selected: selectedIds.has(p.id),
-          dragging: draggingId === p.id,
+          dragging: draggingIds.has(p.id),
           landing: landingId === p.id,
         };
       }),

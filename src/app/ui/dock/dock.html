@@ -134,7 +134,7 @@
             [selected]="picked"
             [style.width.px]="m.w"
             [style.height.px]="m.h"
-            [class.is-dragging]="draggingId() === p.id"
+            [class.is-dragging]="draggingIds().has(p.id)"
             (pointerdown)="press($event, p)"
             (dblclick)="openDetails(p)"
             (keydown.enter)="openDetails(p)"

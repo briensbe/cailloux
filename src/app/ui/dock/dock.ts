@@ -95,7 +95,7 @@ export class Dock {
   /** Hauteur réservée en bas de page pour que le dock ne masque pas le dernier vase. */
   protected readonly reserved = computed(() => this.dockHeight() + DOCK_MARGIN_PX);
 
-  protected readonly draggingId = computed(() => this.dnd.drag()?.project.id ?? null);
+  protected readonly draggingIds = computed(() => new Set(this.dnd.drag()?.projects.map((p) => p.id) ?? []));
   /** Une brique d'équipe survole le dock : il s'allume pour montrer qu'on peut l'y lâcher. */
   protected readonly active = computed(() => this.dnd.drag()?.target?.kind === 'common');
   /** Un fichier de l'explorateur survole le dock. */

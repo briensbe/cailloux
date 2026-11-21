@@ -119,14 +119,16 @@ export class Reservoir {
 
   // ---------------------------------------------------------------- Glisser-déposer
 
-  protected readonly draggingId = computed(() => this.dnd.drag()?.project.id ?? null);
-  /** Le fantôme qui montre où la brique déplacée va s'aimanter dans ce vase. */
-  protected readonly ghost = computed(() => {
+  protected readonly draggingIds = computed(() => new Set(this.dnd.drag()?.projects.map((p) => p.id) ?? []));
+  /** Les fantômes qui montrent où les briques déplacées vont s'aimanter dans ce vase. */
+  protected readonly ghosts = computed(() => {
     const d = this.dnd.drag();
     const t = d?.target;
-    if (!d || t?.kind !== 'grid' || t.teamId !== this.team().id) return null;
+    if (!d || t?.kind !== 'grid' || t.teamId !== this.team().id) return [];
     // La forme recalée : un projet trop haut pour ce vase y entre ramené à l'effectif.
-    return { ...t.cell, weeks: t.dims.weeks, persons: t.dims.persons, stone: STONES[d.project.color].base };
+    return t.placements
+      .filter((pl): pl is { project: Project; cell: NonNullable<typeof pl.cell>; dims: Dims } => pl.cell !== null)
+      .map((pl) => ({ ...pl.cell, weeks: pl.dims.weeks, persons: pl.dims.persons, stone: STONES[pl.project.color].base }));
   });
   protected readonly trayActive = computed(() => {
     const t = this.dnd.drag()?.target;

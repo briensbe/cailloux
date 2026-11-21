@@ -1,25 +1,33 @@
 import { afterNextRender, inject, Injectable, Injector, signal } from '@angular/core';
 import { Dims, fitToTeam } from '../domain/capacity';
-import { Cell, findNearestFree } from '../domain/geometry';
+import { Cell, findNearestFree, Occupancy } from '../domain/geometry';
 import { Project } from '../domain/model';
 import { PlanningStore } from './planning.store';
 import { ViewService } from './view.service';
 
+export interface GridPlacement {
+  project: Project;
+  cell: Cell | null;
+  dims: Dims;
+}
+
 /**
- * Où la brique atterrira : une case d'un vase (avec la forme qu'elle y prendra, recalée à l'effectif
- * si elle est trop haute), le bac d'une équipe, ou le bac commun (le dock).
+ * Où la ou les briques atterriront : un vase (avec chaque placement calculé en cascade),
+ * le bac d'une équipe, ou le bac commun (le dock).
  */
 export type DropTarget =
-  | { kind: 'grid'; teamId: string; cell: Cell; dims: Dims }
+  | { kind: 'grid'; teamId: string; placements: GridPlacement[] }
   | { kind: 'tray'; teamId: string }
   | { kind: 'common' };
 
 export interface DragState {
   project: Project;
-  /** Où l'on a « attrapé » la brique, en pixels depuis son coin haut-gauche (à taille réelle). */
+  /** Toutes les briques déplacées (1 en glisser simple, N en glisser groupé). */
+  projects: Project[];
+  /** Où l'on a « attrapé » la brique principale, en pixels depuis son coin haut-gauche (à taille réelle). */
   grab: { x: number; y: number };
   pointer: { x: number; y: number };
-  /** Là où la brique atterrira si on la lâche maintenant (`null` = retour à sa place). */
+  /** Là où la ou les briques atterriront si on lâche maintenant (`null` = retour à leur place). */
   target: DropTarget | null;
 }
 
@@ -77,7 +85,18 @@ export class DragService {
               y: ((start.y - box.top) / box.height) * project.persons * cellH,
             }
           : { x: start.x - box.left + hiddenWeeks * cellW, y: start.y - box.top };
-        this.drag.set({ project, grab, pointer: start, target: null });
+        const selected = this.store.selectedIds();
+        const projects =
+          selected.has(project.id) && selected.size > 1
+            ? [
+                project,
+                ...this.store
+                  .projects()
+                  .filter((pr) => selected.has(pr.id) && pr.id !== project.id)
+                  .sort((a, b) => b.charge - a.charge),
+              ]
+            : [project];
+        this.drag.set({ project, projects, grab, pointer: start, target: null });
       }
       const d = this.drag()!;
       const pointer = { x: e.clientX, y: e.clientY };
@@ -113,7 +132,9 @@ export class DragService {
       .elementFromPoint(pointer.x, pointer.y)
       ?.closest<HTMLElement>('[data-drop-team], [data-drop-kind="common"]');
     if (!zone) return null;
-    if (zone.dataset['dropKind'] === 'common') return d.project.teamId === null ? null : { kind: 'common' };
+    if (zone.dataset['dropKind'] === 'common') {
+      return d.projects.every((pr) => pr.teamId === null) ? null : { kind: 'common' };
+    }
     const teamId = zone.dataset['dropTeam'];
     const team = this.store.team(teamId ?? null);
     if (!teamId || !team) return null;
@@ -123,8 +144,6 @@ export class DragService {
     if (!grid) return null;
     const box = grid.getBoundingClientRect();
     const { project: p, grab } = d;
-    // Dans un vase trop étroit, la brique y entre ramenée à l'effectif : on cherche une place pour cette forme-là.
-    const dims = fitToTeam(p, team.size);
     const cellW = this.view.activeCellW();
     const cellH = this.view.activeCellH();
     const left = pointer.x - grab.x;
@@ -134,21 +153,53 @@ export class DragService {
       col: Math.round((left - box.left) / cellW),
       row: Math.round((box.bottom - bottom) / cellH),
     };
-    // Un projet déjà commencé peut garder une partie avant le bord gauche : si la place visée
-    // est libre, on la prend telle quelle (l'aimant, lui, ne propose que des places visibles).
-    const exact = { ...desired, weeks: dims.weeks, persons: dims.persons };
-    if (desired.col < 0 && this.store.canOccupy(teamId, p.id, exact)) {
-      return { kind: 'grid', teamId, cell: desired, dims };
+
+    if (d.projects.length === 1) {
+      // Dans un vase trop étroit, la brique y entre ramenée à l'effectif : on cherche une place pour cette forme-là.
+      const dims = fitToTeam(p, team.size);
+      // Un projet déjà commencé peut garder une partie avant le bord gauche : si la place visée
+      // est libre, on la prend telle quelle (l'aimant, lui, ne propose que des places visibles).
+      const exact = { ...desired, weeks: dims.weeks, persons: dims.persons };
+      if (desired.col < 0 && this.store.canOccupy(teamId, p.id, exact)) {
+        return { kind: 'grid', teamId, placements: [{ project: p, cell: desired, dims }] };
+      }
+      const cell = findNearestFree(desired, dims, this.store.occupancy(teamId, p.id));
+      return cell ? { kind: 'grid', teamId, placements: [{ project: p, cell, dims }] } : null;
     }
-    const cell = findNearestFree(desired, dims, this.store.occupancy(teamId, p.id));
-    return cell ? { kind: 'grid', teamId, cell, dims } : null;
+
+    // Glisser groupé : on place en cascade sur une occupation virtuelle mise à jour à chaque brique.
+    const draggedIds = new Set(d.projects.map((pr) => pr.id));
+    const placedRects = [...this.store.rectsExcept(teamId, draggedIds)];
+    const bounds = this.store.bounds(team);
+    const placements: GridPlacement[] = [];
+    for (const pr of d.projects) {
+      const dims = fitToTeam(pr, team.size);
+      const occ = new Occupancy(bounds, placedRects);
+      const cell = findNearestFree(desired, dims, occ);
+      if (cell) placedRects.push({ ...cell, ...dims });
+      placements.push({ project: pr, cell, dims });
+    }
+    return placements.some((pl) => pl.cell !== null) ? { kind: 'grid', teamId, placements } : null;
   }
 
   private drop(): void {
     const d = this.drag();
     this.drag.set(null);
     if (!d?.target) return;
-    const { project: p, target } = d;
+    const { project: p, projects, target } = d;
+
+    if (projects.length > 1) {
+      const ids = projects.map((pr) => pr.id);
+      if (target.kind === 'common') {
+        this.store.moveProjectsToCommon(ids);
+      } else if (target.kind === 'tray') {
+        this.store.moveProjectsToTeam(ids, target.teamId, 'tray');
+      } else {
+        this.store.placeProjectsInTeam(target.teamId, target.placements);
+      }
+      return;
+    }
+
     if (target.kind === 'tray') {
       this.store.moveProject(p.id, target.teamId, null);
       return;
@@ -157,9 +208,11 @@ export class DragService {
       this.store.moveProject(p.id, null, null);
       return;
     }
+    const placement = target.placements[0];
+    if (!placement?.cell) return;
     const from = { x: d.pointer.x - d.grab.x, y: d.pointer.y - d.grab.y };
     this.landing.set(p.id);
-    this.store.moveProject(p.id, target.teamId, target.cell);
+    this.store.moveProject(p.id, target.teamId, placement.cell);
     // Une fois la brique rendue à sa vraie place, on la fait partir de là où on l'a lâchée.
     afterNextRender(() => this.land(p.id, from), { injector: this.injector });
   }

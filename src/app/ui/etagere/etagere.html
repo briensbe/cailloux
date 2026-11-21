@@ -121,7 +121,7 @@
               @if (l.overH) {
                 <div class="over-zone" [style.bottom.px]="l.vaseH" [style.height.px]="l.overH"></div>
               }
-              @if (ghostFor(l.team.id); as g) {
+              @for (g of ghostsFor(l.team.id); track $index) {
                 <div
                   class="ghost"
                   [style.left.px]="g.left"

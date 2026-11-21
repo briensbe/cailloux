@@ -113,7 +113,7 @@
           <div class="today" [style.left.px]="x"><span>aujourd'hui</span></div>
         }
 
-        @if (ghost(); as g) {
+        @for (g of ghosts(); track $index) {
           @let gr = rect(g);
           <div
             class="ghost"
@@ -143,7 +143,7 @@
             [style.width.px]="box.width"
             [style.height.px]="box.height"
             [class.is-overflow]="item.r.row + item.r.persons > team().size"
-            [class.is-dragging]="draggingId() === p.id"
+            [class.is-dragging]="draggingIds().has(p.id)"
             [class.is-landing]="dnd.landing() === p.id"
             [class.is-resizing]="resizing()?.id === p.id"
             [class.is-dropped]="store.justDropped() === p.id"
@@ -189,7 +189,7 @@
       [selected]="store.selectedIds().has(p.id)"
       [style.width.px]="m.w"
       [style.height.px]="m.h"
-      [class.is-dragging]="draggingId() === p.id"
+      [class.is-dragging]="draggingIds().has(p.id)"
       (pointerdown)="dnd.press($event, p, 0, true)"
       (dblclick)="view.openInspector(p.id)"
       (keydown.enter)="view.openInspector(p.id)"

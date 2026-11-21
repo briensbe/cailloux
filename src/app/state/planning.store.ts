@@ -104,11 +104,16 @@ export class PlanningStore {
     return { weeks: this.window().weeks, persons: team.size };
   }
 
-  /** Carte d'occupation d'un vase sur la fenêtre, en ignorant éventuellement une brique (celle qu'on déplace). */
-  occupancy(teamId: string, exceptId?: string): Occupancy {
+  /** Carte d'occupation d'un vase sur la fenêtre, en ignorant éventuellement une ou plusieurs briques (celles qu'on déplace). */
+  occupancy(teamId: string, except?: string | ReadonlySet<string>): Occupancy {
     const team = this.team(teamId);
     if (!team) return new Occupancy({ weeks: 0, persons: 0 }, []);
-    return new Occupancy(this.bounds(team), this.rectsOf(teamId, exceptId));
+    return new Occupancy(this.bounds(team), this.rectsOf(teamId, except));
+  }
+
+  /** Rectangles occupés dans un vase sur la fenêtre, en ignorant un ensemble de briques. */
+  rectsExcept(teamId: string, except: ReadonlySet<string>): Rect[] {
+    return this.rectsOf(teamId, except);
   }
 
   /** Une brique déjà posée peut-elle prendre cette forme / cette place ? (Gestes : poignées, flèches, inspecteur.) */
@@ -464,6 +469,43 @@ export class PlanningStore {
     });
   }
 
+  /**
+   * Applique un lot de placements déjà calculés (par ex. lors d'un glisser-déposer groupé)
+   * en une seule transaction annulable.
+   */
+  placeProjectsInTeam(
+    teamId: string,
+    placements: readonly { project: Project; cell: Cell | null; dims: Dims }[],
+  ): void {
+    const team = this.team(teamId);
+    if (!team || placements.length === 0) return;
+
+    const updates = new Map<string, Project>();
+    let placedCount = 0;
+    let trayCount = 0;
+    for (const { project: p, cell, dims } of placements) {
+      if (cell) {
+        updates.set(p.id, { ...p, ...dims, teamId, start: this.startAt(cell.col), row: cell.row });
+        placedCount++;
+      } else {
+        updates.set(p.id, { ...p, ...dims, teamId, start: null, row: null });
+        trayCount++;
+      }
+    }
+
+    this.commit({
+      ...this.current(),
+      projects: this.projects().map((p) => updates.get(p.id) ?? p),
+    });
+    this.select(null);
+
+    const message =
+      trayCount === 0
+        ? `${placedCount} ${placedCount > 1 ? 'cailloux placés' : 'caillou placé'} dans ${team.name}.`
+        : `${placedCount} ${placedCount > 1 ? 'placés' : 'placé'} dans ${team.name}, ${trayCount} en attente faute de place.`;
+    this.toast.show(message, { label: 'Annuler', run: () => this.undo() });
+  }
+
   /** Déplacement au clavier, case par case (y compris pour un projet déjà commencé). */
   nudge(id: string, dCol: number, dRow: number): void {
     const p = this.project(id);
@@ -597,9 +639,10 @@ export class PlanningStore {
     return addWeeks(this.windowStart(), col);
   }
 
-  private rectsOf(teamId: string, exceptId?: string): Rect[] {
+  private rectsOf(teamId: string, except?: string | ReadonlySet<string>): Rect[] {
+    const isExcluded = (id: string) => (typeof except === 'string' ? id === except : except?.has(id) ?? false);
     return this.projectsOf(teamId)
-      .filter((p) => p.id !== exceptId)
+      .filter((p) => !isExcluded(p.id))
       .map((p) => this.windowRect(p))
       .filter((r): r is Rect => r !== null);
   }

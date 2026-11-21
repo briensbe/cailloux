@@ -122,4 +122,31 @@ describe('PlanningStore — multi-sélection et déplacement par lot', () => {
       expect(restored.row).toBe(orig.row);
     }
   });
+
+  it('applique un lot de placements calculés par drag & drop et le met en attente si cell est null', () => {
+    const team = store.teams()[0];
+    store.addProject(null, { name: 'G1', charge: 4, persons: 1, mode: 'free', color: 'ochre' });
+    store.addProject(null, { name: 'G2', charge: 2, persons: 1, mode: 'free', color: 'lapis' });
+    const [g1, g2] = store.commonProjects().filter((p) => p.name === 'G1' || p.name === 'G2');
+    store.selectMany([g1.id, g2.id]);
+
+    store.placeProjectsInTeam(team.id, [
+      { project: g1, cell: { col: 0, row: 0 }, dims: { weeks: g1.weeks, persons: g1.persons, charge: g1.charge } },
+      { project: g2, cell: null, dims: { weeks: g2.weeks, persons: g2.persons, charge: g2.charge } },
+    ]);
+
+    expect(store.selectedIds().size).toBe(0);
+    const updated1 = store.projects().find((p) => p.id === g1.id)!;
+    const updated2 = store.projects().find((p) => p.id === g2.id)!;
+    expect(updated1.teamId).toBe(team.id);
+    expect(updated1.start).not.toBeNull();
+    expect(updated1.row).toBe(0);
+    expect(updated2.teamId).toBe(team.id);
+    expect(updated2.start).toBeNull();
+    expect(updated2.row).toBeNull();
+
+    store.undo();
+    expect(store.projects().find((p) => p.id === g1.id)?.teamId).toBeNull();
+    expect(store.projects().find((p) => p.id === g2.id)?.teamId).toBeNull();
+  });
 });
