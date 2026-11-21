@@ -97,7 +97,7 @@
     </div>
 
     <div class="time scroll" (scroll)="syncScroll($event, bandTime, rulerTime)">
-      <div class="track" [style.width.px]="gridW()">
+      <div class="track" [style.width.px]="gridW()" (pointerdown)="onTrackPointerDown($event)">
         @if (pc) {
           <div class="period" [style.left.px]="pc.from * cw()" [style.width.px]="(pc.to - pc.from) * cw()"></div>
         }
@@ -116,7 +116,6 @@
                 class="shelf-grid"
                 data-grid
                 [style.height.px]="l.vaseH"
-                (pointerdown)="onGridPointerDown($event)"
               ></div>
               @if (l.overH) {
                 <div class="over-zone" [style.bottom.px]="l.vaseH" [style.height.px]="l.overH"></div>

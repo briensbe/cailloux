@@ -128,6 +128,9 @@ export class ViewService {
   /** Dialogue d'avertissement avant suppression d'un projet : `null` = fermé ; sinon l'identifiant du projet. */
   readonly confirmDeleteProjectId = signal<string | null>(null);
 
+  /** Rectangle de sélection au lasso actif (en coordonnées viewport), affiché dans DragOverlay. */
+  readonly lasso = signal<{ left: number; top: number; width: number; height: number } | null>(null);
+
   constructor() {
     effect(() => {
       const view: StoredView = {

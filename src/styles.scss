@@ -65,6 +65,22 @@ body.is-dragging * {
   user-select: none;
 }
 
+body.is-selecting,
+body.is-selecting * {
+  cursor: crosshair !important;
+  user-select: none;
+}
+
+.lasso-rect {
+  position: fixed;
+  z-index: 900;
+  pointer-events: none;
+  border: 1.5px solid var(--water);
+  border-radius: 6px;
+  background: color-mix(in oklab, var(--water) 14%, transparent);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.45);
+}
+
 .mono {
   font-family: var(--font-mono);
 }

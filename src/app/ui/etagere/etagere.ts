@@ -10,6 +10,7 @@ import { DragService } from '../../state/drag.service';
 import { PlanningStore } from '../../state/planning.store';
 import { SHELF_ROW_H, ViewService } from '../../state/view.service';
 import { ResizeHandle } from '../brick/brick';
+import { startLasso } from '../lasso';
 
 export { SHELF_ROW_H };
 /** Largeur minimale d'une brique pour y écrire son nom (tronqué par « … » au besoin). */
@@ -145,10 +146,20 @@ export class Etagere {
       });
   }
 
-  protected onGridPointerDown(event: PointerEvent): void {
-    if (event.target !== event.currentTarget) return;
-    this.view.inspectorOpen.set(false);
-    this.store.select(null);
+  protected onTrackPointerDown(event: PointerEvent): void {
+    if ((event.target as HTMLElement).closest('.b, .handle, .chip')) return;
+    startLasso({
+      event,
+      container: event.currentTarget as HTMLElement,
+      itemSelector: '.b[data-brick-id]',
+      idAttr: 'brickId',
+      rectSignal: this.view.lasso,
+      store: this.store,
+      onEmptyClick: () => {
+        this.view.inspectorOpen.set(false);
+        this.store.select(null);
+      },
+    });
   }
 
   protected pressBrick(event: PointerEvent, b: ShelfBrick): void {

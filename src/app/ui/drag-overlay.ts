@@ -44,6 +44,15 @@ import { Brick } from './brick/brick';
         </span>
       }
     }
+    @if (view.lasso(); as l) {
+      <div
+        class="lasso-rect"
+        [style.left.px]="l.left"
+        [style.top.px]="l.top"
+        [style.width.px]="l.width"
+        [style.height.px]="l.height"
+      ></div>
+    }
   `,
   styles: `
     :host {

@@ -121,11 +121,11 @@
   </header>
 
   @if (view.dockOpen()) {
-    <div class="items">
+    <div class="items" (pointerdown)="onItemsPointerDown($event)">
       @for (p of projects(); track p.id) {
         @let m = miniSize(p);
         @let picked = isSelected(p.id);
-        <div class="dock-item" [class.is-picked]="picked" [class.multi]="multiActive()">
+        <div class="dock-item" [attr.data-lasso-id]="p.id" [class.is-picked]="picked" [class.multi]="multiActive()">
           <app-brick
             class="mini pill"
             tabindex="0"

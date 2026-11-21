@@ -21,6 +21,7 @@ import { ToastService } from '../../state/toast.service';
 import { ViewService } from '../../state/view.service';
 import { Brick } from '../brick/brick';
 import { Icon } from '../icon';
+import { startLasso } from '../lasso';
 
 /** Écart entre le bas du dock et le bas de l'écran (`bottom` dans `dock.scss`), plus une marge. */
 const DOCK_MARGIN_PX = 20;
@@ -123,6 +124,18 @@ export class Dock {
       w: Math.min(PILL_W_MAX, Math.round(PILL_W_BASE + PILL_W_PER_SQRT_WEEK * Math.sqrt(p.weeks))),
       h: Math.min(PILL_H_MAX, PILL_H + (p.persons - 1) * PILL_H_PER_PERSON),
     };
+  }
+
+  protected onItemsPointerDown(event: PointerEvent): void {
+    if ((event.target as HTMLElement).closest('.dock-item')) return;
+    startLasso({
+      event,
+      container: event.currentTarget as HTMLElement,
+      itemSelector: '.dock-item',
+      idAttr: 'lassoId',
+      rectSignal: this.view.lasso,
+      store: this.store,
+    });
   }
 
   protected isSelected(id: string): boolean {

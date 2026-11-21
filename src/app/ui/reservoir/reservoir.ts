@@ -11,6 +11,7 @@ import { PlanningStore } from '../../state/planning.store';
 import { CELL_H, ViewService } from '../../state/view.service';
 import { Brick, ResizeHandle } from '../brick/brick';
 import { Icon } from '../icon';
+import { startLasso } from '../lasso';
 import { Stepper } from '../stepper';
 
 /** Une brique posée, vue dans la fenêtre : son rectangle complet et la partie dessinée. */
@@ -190,7 +191,15 @@ export class Reservoir {
   }
 
   protected onGridPointerDown(event: PointerEvent): void {
-    if (event.target === event.currentTarget) this.store.select(null);
+    if ((event.target as HTMLElement).closest('app-brick')) return;
+    startLasso({
+      event,
+      container: event.currentTarget as HTMLElement,
+      itemSelector: 'app-brick[data-brick-id]',
+      idAttr: 'brickId',
+      rectSignal: this.view.lasso,
+      store: this.store,
+    });
   }
 
   /**
