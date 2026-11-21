@@ -149,4 +149,22 @@ describe('PlanningStore — multi-sélection et déplacement par lot', () => {
     expect(store.projects().find((p) => p.id === g1.id)?.teamId).toBeNull();
     expect(store.projects().find((p) => p.id === g2.id)?.teamId).toBeNull();
   });
+
+  it('supprime plusieurs projets en une seule transaction annulable et nettoie la sélection', () => {
+    store.addProject(null, { name: 'S1', charge: 3, persons: 1, mode: 'fixed', color: 'ochre' });
+    store.addProject(null, { name: 'S2', charge: 5, persons: 1, mode: 'fixed', color: 'lapis' });
+    const [s1, s2] = store.commonProjects().filter((p) => p.name === 'S1' || p.name === 'S2');
+    store.selectMany([s1.id, s2.id]);
+    const beforeCount = store.projects().length;
+
+    store.removeProjects([s1.id, s2.id]);
+
+    expect(store.projects().length).toBe(beforeCount - 2);
+    expect(store.selectedIds().size).toBe(0);
+
+    store.undo();
+    expect(store.projects().length).toBe(beforeCount);
+    expect(store.projects().some((p) => p.id === s1.id)).toBe(true);
+    expect(store.projects().some((p) => p.id === s2.id)).toBe(true);
+  });
 });

@@ -41,6 +41,14 @@
             Bac d'attente <span class="caret">▾</span>
           </button>
         }
+        <button
+          type="button"
+          class="btn btn-danger batch-btn"
+          (click)="deleteSelected()"
+          title="Supprimer les projets sélectionnés (Suppr)"
+        >
+          <app-icon name="trash" /> Supprimer
+        </button>
       </div>
 
       <button

@@ -516,17 +516,27 @@ export class PlanningStore {
   }
 
   removeProject(id: string): void {
-    const p = this.project(id);
-    if (!p) return;
-    this.commit({ ...this.current(), projects: this.projects().filter((pr) => pr.id !== id) });
-    if (this.selectedIds().has(id)) {
+    this.removeProjects([id]);
+  }
+
+  /** Retire un ou plusieurs projets en une seule transaction annulable. */
+  removeProjects(ids: readonly string[]): void {
+    const idSet = new Set(ids);
+    const removed = this.projects().filter((pr) => idSet.has(pr.id));
+    if (removed.length === 0) return;
+    this.commit({ ...this.current(), projects: this.projects().filter((pr) => !idSet.has(pr.id)) });
+    if ([...this.selectedIds()].some((id) => idSet.has(id))) {
       this.selectedIds.update((prev) => {
         const next = new Set(prev);
-        next.delete(id);
+        for (const id of idSet) next.delete(id);
         return next;
       });
     }
-    this.toast.show(`« ${p.name} » a été retiré.`, { label: 'Annuler', run: () => this.undo() });
+    const msg =
+      removed.length === 1
+        ? `« ${removed[0].name} » a été retiré.`
+        : `${removed.length} projets ont été retirés.`;
+    this.toast.show(msg, { label: 'Annuler', run: () => this.undo() });
   }
 
   /** « Secouer le vase » : tout glisse vers la semaine en cours et vers le fond ; le passé ne bouge pas. */

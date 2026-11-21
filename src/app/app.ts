@@ -145,6 +145,13 @@ export class App {
       this.store.select(null);
       return;
     }
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      const ids = [...this.store.selectedIds()];
+      if (ids.length === 0) return;
+      e.preventDefault();
+      this.view.confirmDeleteProjectIds.set(ids);
+      return;
+    }
     const id = this.store.selectedId();
     if (!id) return;
     if (e.key === 'Enter') {
@@ -158,10 +165,7 @@ export class App {
       ArrowUp: [0, 1],
       ArrowDown: [0, -1],
     };
-    if (e.key === 'Delete' || e.key === 'Backspace') {
-      e.preventDefault();
-      this.view.confirmDeleteProjectId.set(id);
-    } else if (arrows[e.key]) {
+    if (arrows[e.key]) {
       e.preventDefault();
       this.store.nudge(id, ...arrows[e.key]);
     }

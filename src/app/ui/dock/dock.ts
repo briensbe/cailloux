@@ -197,6 +197,12 @@ export class Dock {
     this.store.moveProjectsToCommon(ids);
   }
 
+  protected deleteSelected(): void {
+    const ids = this.selectedProjects().map((p) => p.id);
+    this.teamMenu.set(null);
+    if (ids.length > 0) this.view.confirmDeleteProjectIds.set(ids);
+  }
+
   protected clearSelection(): void {
     this.teamMenu.set(null);
     this.store.select(null);

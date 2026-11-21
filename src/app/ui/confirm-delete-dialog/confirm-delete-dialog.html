@@ -1,16 +1,25 @@
-@if (project(); as p) {
+@let list = projects();
+@if (list.length > 0) {
   <dialog #dialog class="dialog" (close)="onClosed()" [style.--stone]="stoneColor()">
     <header>
       <p class="eyebrow">Avertissement</p>
-      <h2>Supprimer « {{ p.name }} » ?</h2>
+      @if (single(); as p) {
+        <h2>Supprimer « {{ p.name }} » ?</h2>
+      } @else {
+        <h2>Supprimer {{ list.length }} projets ?</h2>
+      }
     </header>
 
     <div class="body">
       <p>
-        @if (team(); as t) {
-          Ce projet (<strong>{{ p.charge }} j·h</strong>) va être retiré de l'équipe « {{ t.name }} ».
+        @if (single(); as p) {
+          @if (team(); as t) {
+            Ce projet (<strong>{{ p.charge | number: '1.0-1' }} j·h</strong>) va être retiré de l'équipe « {{ t.name }} ».
+          } @else {
+            Ce projet (<strong>{{ p.charge | number: '1.0-1' }} j·h</strong>) va être retiré du bac commun.
+          }
         } @else {
-          Ce projet (<strong>{{ p.charge }} j·h</strong>) va être retiré du bac commun.
+          Ces <strong>{{ list.length }} projets</strong> (total <strong>{{ totalCharge() | number: '1.0-1' }} j·h</strong>) vont être retirés du planning.
         }
       </p>
       <p class="hint">
@@ -21,7 +30,8 @@
     <footer>
       <button type="button" class="btn btn-ghost" (click)="close()" autofocus>Annuler</button>
       <button type="button" class="btn btn-danger" (click)="confirm()">
-        <app-icon name="trash" /> Supprimer le projet
+        <app-icon name="trash" />
+        {{ list.length === 1 ? 'Supprimer le projet' : 'Supprimer les ' + list.length + ' projets' }}
       </button>
     </footer>
   </dialog>
